@@ -18,6 +18,7 @@
 - [x] Fluxo de Humanas (Markdown/EPUB) e templates/metadata.yaml criados.
 - [x] Provisionador global scripts/init_book.py implementado e operacional.
 - [x] Instrução de build EPUB via Pandoc formalizada.
+- [x] FASE 3 (Modo Esquadrão Paralelo: Operário/Maestro) integrada ao SKILL.md local e às pastas globais.
 
 ## 4. Próximo Passo Imediato (Foco Ativo)
 - [x] Arquitetura v2.0 do motor concluída. Framework pronto para processamento de novos livros ou push remoto.

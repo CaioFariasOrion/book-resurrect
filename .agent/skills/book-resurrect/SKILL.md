@@ -1,6 +1,6 @@
 ---
 name: book-resurrect
-description: Pipeline autônomo de engenharia reversa, OCR multimodal e recuperação editorial de livros escaneados (PDF) para LaTeX vetorial compilável. Ative sempre que o usuário pedir para transcrever, digitalizar, converter, recuperar um livro em PDF para LaTeX, iniciar o mapeamento de um livro (Fase 0), ou continuar/executar lotes pendentes a partir de roadmap.json e progress.json.
+description: Framework editorial autônomo para engenharia reversa, OCR multimodal, tradução semântica e reconstrução vetorial (LaTeX/TikZ ou Markdown/EPUB) a partir de PDFs escaneados.
 ---
 
 # Skill: `book-resurrect` — Recuperação Editorial de Livros Escaneados para LaTeX
@@ -11,12 +11,17 @@ Para garantir tolerância a falhas e continuidade entre diferentes sessões de c
 
 ---
 
-## AUTO-SCAFFOLDING (Pasta Vazia / Instalação Global)
-Esta skill pode estar instalada globalmente e ser acionada em uma pasta que ainda não tem o motor. Antes de qualquer outra fase, verifique a pasta aberta (workspace atual):
+## AUTO-SCAFFOLDING (Pasta Vazia / Instalação Global ou Remota via GitHub)
+Esta skill pode estar instalada globalmente ou ser chamada em uma pasta vazia que ainda não possui o motor. Antes de qualquer outra fase, verifique a pasta aberta (workspace atual):
 
 1. **Condição de ativação**: as pastas `scripts/` e `templates/` NÃO existem na raiz do workspace.
-2. **Localizar o repositório mestre** do `book-resurrect`. Caminho padrão: `C:/Users/caiol/Documents/01_ACADEMICO/PROJETINHOS/book-resurrect/` (deve conter `scripts/init_book.py`). Se esse caminho não existir nesta máquina, pergunte ao usuário onde está o repositório mestre. Não invente caminhos.
-3. **Localizar o PDF**: use o PDF anexado ou o único `.pdf` da raiz do workspace. Se houver mais de um, pergunte qual usar.
+2. **Localizar ou baixar o repositório mestre** do `book-resurrect`:
+   - Caminho local padrão: `C:/Users/caiol/Documents/01_ACADEMICO/PROJETINHOS/book-resurrect/` (deve conter `scripts/init_book.py`).
+   - Se esse caminho local não existir na máquina, clone automaticamente o repositório público oficial para uma pasta temporária ou para `~/.gemini/book-resurrect-engine`:
+     ```bash
+     git clone https://github.com/CaioFariasOrion/book-resurrect.git "$HOME/.gemini/book-resurrect-engine"
+     ```
+3. **Localizar o PDF**: use o PDF anexado no chat ou o único `.pdf` da raiz do workspace. Se houver mais de um, pergunte qual usar.
 4. **Provisionar**, executando o comando com o diretório de trabalho na pasta aberta (destino `.`):
    ```bash
    python "<repositorio_mestre>/scripts/init_book.py" --pdf "<arquivo.pdf>" --dest .
@@ -305,3 +310,27 @@ Aplique esta seção conforme o `translation_mode` gravado no cabeçalho de `roa
    pandoc templates/metadata.yaml capitulos/*.md -o build/livro_completo.epub --toc --toc-depth=2
    ```
    O `pandoc` precisa estar instalado na máquina. Se o comando falhar, informe o erro ao usuário em vez de ajustar os capítulos.
+
+
+---
+
+## FASE 3 — Modo Esquadrão Paralelo (Multi-Chat no Antigravity)
+
+Esta fase habilita o processamento simultâneo de múltiplos capítulos ou lotes em conversas paralelas sobre o mesmo diretório de livro, separando os agentes de transcrição (**Modo Operário**) do agente integrador (**Modo Maestro**).
+
+### 1. Modo Operário (Gatilho: `Operário: <alvo>`)
+- **Escopo de Escrita Isolado:** Escrever exclusivamente no arquivo designado do capítulo ou lote (`capitulos/<nome_unico>.tex` ou `.md`). Caso utilize `crop_figure.py`, nomear as figuras com prefixo exclusivo do capítulo (`figuras/capXX_fig_Y.png`) para evitar sobrescrita entre agentes.
+- **Fatiamento Restrito:** Executar `slice_pdf.py` apenas para o intervalo exato de páginas (`--start` e `--end`) correspondente ao seu lote.
+- **Bloqueio de Concorrência (Regra Inviolável):** Enquanto estiver em Modo Operário, é estritamente proibido:
+  1. Ler ou editar `main.tex`.
+  2. Editar `roadmap.json`, `progress.json` ou `CONTEXT.md`.
+  3. Executar `pdflatex`, `tectonic` ou `compile_check.py` sobre `main.tex` (evitando lock nos arquivos `.aux`, `.log` e `.toc`).
+- **Validação de Fechamento do Operário:** Executar verificação sintática local no arquivo `capitulos/<nome_unico>.tex` garantindo:
+  1. Equilíbrio exato de chaves `{}`.
+  2. Fechamento correspondente de todos os blocos `\begin{...}` e `\end{...}`.
+
+### 2. Modo Maestro (Gatilho: `Maestro: Consolidar`)
+- **Pré-condição:** Acionado após a conclusão dos lotes pelos Operários.
+- **Integração:** Inspecionar `capitulos/`, ordenar os arquivos gerados e inserir as diretivas `\include{capitulos/...}` em `main.tex`.
+- **Compilação e Correção:** Executar `python scripts/compile_check.py` (ou `pdflatex` em duas passadas) até obter `exit code 0`, corrigindo eventuais erros de sintaxe residual ou referências cruzadas nos capítulos.
+- **Governança:** Atualizar `progress.json` e `CONTEXT.md` registrando os capítulos consolidados.
