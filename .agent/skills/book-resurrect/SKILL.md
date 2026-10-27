@@ -11,6 +11,23 @@ Para garantir tolerância a falhas e continuidade entre diferentes sessões de c
 
 ---
 
+## AUTO-SCAFFOLDING (Pasta Vazia / Instalação Global)
+Esta skill pode estar instalada globalmente e ser acionada em uma pasta que ainda não tem o motor. Antes de qualquer outra fase, verifique a pasta aberta (workspace atual):
+
+1. **Condição de ativação**: as pastas `scripts/` e `templates/` NÃO existem na raiz do workspace.
+2. **Localizar o repositório mestre** do `book-resurrect`. Caminho padrão: `C:/Users/caiol/Documents/01_ACADEMICO/PROJETINHOS/book-resurrect/` (deve conter `scripts/init_book.py`). Se esse caminho não existir nesta máquina, pergunte ao usuário onde está o repositório mestre. Não invente caminhos.
+3. **Localizar o PDF**: use o PDF anexado ou o único `.pdf` da raiz do workspace. Se houver mais de um, pergunte qual usar.
+4. **Provisionar**, executando o comando com o diretório de trabalho na pasta aberta (destino `.`):
+   ```bash
+   python "<repositorio_mestre>/scripts/init_book.py" --pdf "<arquivo.pdf>" --dest .
+   ```
+   O script cria `capitulos/`, `figuras/`, `build/`, `scripts/`, `templates/`, copia o PDF, a skill e os adaptadores de IDE e gera o `CONTEXT.md`. Se ele falhar, mostre o erro ao usuário e pare.
+5. Depois do provisionamento, siga normalmente: leia o `CONTEXT.md` criado e abra a **Triagem Interativa** (Pré-Fase 0).
+
+Se `scripts/` e `templates/` já existirem, ignore esta seção.
+
+---
+
 <critical_constraint_pdf_vision>
 ## RESTRIÇÃO CRÍTICA DE VISÃO E MEMÓRIA
 1. **PROIBIDO** usar bibliotecas de extração de texto bruto (`pypdf`, `pdfminer`, `pdfplumber`, `fitz.Page.get_text()`) para tentar ler o conteúdo do livro. PDFs escaneados sem OCR ou com OCR defeituoso destroem toda a notação matemática.

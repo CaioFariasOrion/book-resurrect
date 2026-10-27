@@ -99,6 +99,52 @@ O agente lerá imediatamente `progress.json` e `roadmap.json`, identificará tod
 
 ---
 
+## Fluxo v2.0: Modo Global, Provisionador e Dual-Engine
+
+Esta seção descreve os recursos adicionados depois do fluxo básico acima. Arquivos novos: `scripts/init_book.py`, `templates/metadata.yaml` e `CONTEXT.md` (quadro de bordo com o backlog e as regras de governança para agentes).
+
+### Modo global (`@book-resurrect`)
+Com a skill instalada globalmente, você abre uma pasta vazia na IDE, anexa o PDF e chama a skill pelo nome (por exemplo, `@book-resurrect`, ou citando `book-resurrect` no pedido). Se `scripts/` e `templates/` não existirem na pasta, a skill localiza o repositório mestre e roda o `init_book.py` com `--dest .` para provisionar o ambiente, e só depois abre a Triagem Interativa.
+
+Para instalar a skill globalmente (Antigravity), copie o `SKILL.md` para a pasta global de skills do usuário:
+
+```bash
+# Windows (PowerShell)
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.gemini\config\skills\book-resurrect"
+Copy-Item ".agent\skills\book-resurrect\SKILL.md" "$env:USERPROFILE\.gemini\config\skills\book-resurrect\SKILL.md"
+```
+
+Pontos de atenção do modo global:
+- O repositório mestre precisa estar clonado na máquina. O caminho padrão que o `SKILL.md` procura é o do mantenedor; em outra máquina a skill pergunta onde ele está.
+- Depois de editar o `SKILL.md` do repositório, copie-o de novo para a pasta global, senão a versão global fica desatualizada.
+
+### Provisionador via terminal (`init_book.py`)
+Cria a pasta de um livro com `capitulos/`, `figuras/`, `build/`, `scripts/`, `templates/`, copia o PDF, a skill e os adaptadores de IDE e gera um `CONTEXT.md` pronto para a triagem:
+
+```bash
+python scripts/init_book.py --pdf "C:/caminho/livro.pdf" --dest "C:/livros/meu-livro"
+```
+
+Depois, abra a pasta criada na IDE e peça a Triagem Interativa. O script recusa uma pasta que já tenha `roadmap.json`, para não sobrescrever um livro em andamento.
+
+### Dual-Engine: LaTeX/TikZ e Markdown/EPUB
+Na Triagem Interativa, a pergunta 1 define o `project_mode` gravado no `roadmap.json`:
+
+| `project_mode` | Saída | Fechamento de cada lote |
+| :--- | :--- | :--- |
+| `exatas_latex` | `capitulos/capXX.tex`, figuras em TikZ ou recorte | `python scripts/compile_check.py` com `exit code 0` |
+| `humanas_markdown` | `capitulos/capXX.md`, notas `[^1]`, figuras `![legenda](figuras/fig_X_Y.png)` | Sintaxe Markdown e existência dos arquivos em `figuras/` |
+
+No modo Markdown, os metadados da obra (título, autor, direitos, idioma) ficam em `templates/metadata.yaml`. Com todos os lotes concluídos, o EPUB é gerado com o `pandoc` (precisa estar instalado):
+
+```bash
+pandoc templates/metadata.yaml capitulos/*.md -o build/livro_completo.epub --toc --toc-depth=2
+```
+
+A triagem também define `translation_mode` (`fiel`, `traducao` ou `modernizacao`) e `figure_mode` (`hibrido` ou `recorte_total`).
+
+---
+
 ## 🛠️ Utilitários de Linha de Comando (`scripts/`)
 
 Você (ou o agente) também pode invocar os utilitários diretamente via terminal:
