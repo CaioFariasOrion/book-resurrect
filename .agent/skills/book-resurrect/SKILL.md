@@ -20,6 +20,46 @@ Para garantir tolerância a falhas e continuidade entre diferentes sessões de c
 
 ---
 
+## PROTOCOLO DE CONTEXTO: Sincronização entre Sessões
+- No início de cada sessão ou comando, leia `CONTEXT.md` (além de `roadmap.json` e `progress.json`, se existirem) para identificar o foco ativo e os requisitos da etapa atual.
+- Ao finalizar qualquer lote ou evolução estrutural, atualize `CONTEXT.md` e `progress.json` refletindo exatamente o que foi verificado.
+
+---
+
+## FASE DE TRIAGEM INTERATIVA (Pré-Fase 0)
+*(Execute esta fase quando um novo livro em PDF for fornecido e `roadmap.json` ainda NÃO existir. Se `roadmap.json` já existir, pule direto para a Fase 1.)*
+
+1. Renderize as 5 primeiras páginas do PDF e inspecione visualmente para entender o tipo de obra (capa, idioma, presença de fórmulas, gravuras):
+   ```bash
+   python scripts/slice_pdf.py --pdf "<arquivo.pdf>" --start 1 --end 5 --out build/temp_pages
+   ```
+2. Apresente ao usuário as 3 perguntas abaixo e AGUARDE as respostas. Não inicie a Fase 0 sem elas.
+
+   **Pergunta 1: Natureza da Obra**
+   - `[A] Exatas / Técnico`: gera a esteira LaTeX/TikZ.
+   - `[B] Humanas / Geral`: gera a esteira Markdown/EPUB.
+
+   **Pergunta 2: Tratamento de Texto e Idioma**
+   - `[A] Transcrição Fiel (1:1)`: mantém idioma e grafia do original.
+   - `[B] Tradução Semântica`: traduz para outro idioma (ex.: ES/EN para PT-BR).
+   - `[C] Modernização Lexical`: atualiza português arcaico para a ortografia contemporânea.
+
+   **Pergunta 3: Estratégia de Figuras**
+   - `[A] Híbrido`: TikZ vetorial para geometria e gráficos, recorte para gravuras e fotos.
+   - `[B] 100% Recorte Digital Tratado`: todas as figuras via `crop_figure.py`.
+3. Persista as respostas no cabeçalho do `roadmap.json` (criado no Passo 0.4), nos campos `"project_mode"`, `"translation_mode"` e `"figure_mode"`, com estes valores:
+
+   | Campo | Valores aceitos |
+   | :--- | :--- |
+   | `project_mode` | `"exatas_latex"` ou `"humanas_markdown"` |
+   | `translation_mode` | `"fiel"`, `"traducao"` ou `"modernizacao"` |
+   | `figure_mode` | `"hibrido"` ou `"recorte_total"` |
+
+   Se a resposta 2 for `[B]`, registre também o idioma de destino (ex.: `"target_language": "pt-BR"`) no mesmo cabeçalho.
+4. Os modos gravados valem para todos os lotes. Na Fase 2, siga `figure_mode` na seção 2.3 e `translation_mode` na seção 2.5.
+
+---
+
 ## FASE 0 — Inicialização de Ambiente e Mapeamento de Sumário
 *(Execute esta fase APENAS se o arquivo `roadmap.json` NÃO existir na raiz do projeto).*
 
@@ -57,6 +97,9 @@ Para garantir tolerância a falhas e continuidade entre diferentes sessões de c
    {
      "book_title": "Título do Livro",
      "source_pdf": "nome_do_arquivo.pdf",
+     "project_mode": "exatas_latex",
+     "translation_mode": "fiel",
+     "figure_mode": "hibrido",
      "total_pdf_pages": 350,
      "page_offset": 8,
      "batches": [
@@ -213,3 +256,30 @@ Nenhum lote pode ser considerado concluído sem compilação limpa e verificaç�
 4. **Atualização de Estado e Checkpoint**:
    - Atualize `progress.json` alterando o status do lote atual para `"completed"`, incrementando `completed_batches` e registrando o timestamp em `last_updated`.
    - Se todos os lotes solicitados pelo usuário no turno atual foram concluídos, apresente um relatório conciso do lote (páginas transcritas, seções incluídas, figuras TikZ/recortadas criadas e status da compilação `build/main.pdf`) e aguarde o comando para o próximo lote.
+
+### 2.5 — Diretrizes de Tradução e Normalização Semântica
+Aplique esta seção conforme o `translation_mode` gravado no cabeçalho de `roadmap.json`. Em `"fiel"`, nada daqui se aplica e vale a seção 2.1. Em `"traducao"` e `"modernizacao"`, a regra de ouro abaixo vale sem exceção.
+
+1. **Inviolabilidade Notacional (Regra de Ouro)**:
+   - Toda a álgebra, operadores, limites, variáveis ($x$, $y$, $z$, $\alpha$), funções matemáticas e índices originais devem permanecer **estritamente intocados**. Nada de renomear variável, trocar símbolo ou reescrever expressão para "ficar mais natural" no idioma de destino.
+   - A tradução e a modernização atuam só na prosa ao redor das fórmulas, nunca dentro dos ambientes matemáticos.
+2. **Tradução Conceitual** (`translation_mode: "traducao"`):
+   - Traduza os termos estruturais e pedagógicos para o idioma de destino registrado em `target_language`. Exemplos para ES para PT-BR: *Demostración* → *Demonstração*, *Ejemplo* → *Exemplo*, *Corolario* → *Corolário*.
+   - Os rótulos que o `preambulo.tex` já gera (`Definição`, `Teorema`, `Exemplo`) devem ficar coerentes com o idioma de destino.
+   - Mantenha a estrutura original: mesma ordem de parágrafos, mesmas notas de rodapé, mesmos itens `a)`, `b)`, `c)`. Traduzir não autoriza resumir.
+3. **Modernização de Arcaísmos** (`translation_mode: "modernizacao"`):
+   - Atualize grafias antigas para o padrão ortográfico contemporâneo. Exemplo: *pharmacia* → *farmácia*. Ao ajustar uma forma verbal ou pronominal (como *determina-se*), preserve a concordância correta.
+   - Não descaracterize o estilo formal da época: mantenha o vocabulário, o tom e a construção das frases, trocando apenas a grafia e as formas que o leitor atual não reconheceria.
+4. **Registro de Dúvidas**: quando um termo for ambíguo ou não tiver equivalente consagrado, mantenha o original entre parênteses na primeira ocorrência e anote o caso em `notes` do lote no `progress.json`.
+
+### 2.6 — Fluxo Dual-Engine: Modo Humanas / Markdown
+1. **Regra de Ativação**: aplica-se quando `project_mode` no `roadmap.json` for `"humanas_markdown"`. Nesse modo, as seções 2.2 (ambientes LaTeX) e 2.4 (compilação LaTeX) não se aplicam. As seções 2.1 (fidelidade) e 2.5 (tradução e modernização) continuam valendo.
+2. **Formato de Saída**: cada capítulo gera um arquivo `capitulos/capXX.md` estruturado, sem preâmbulo LaTeX. O `target_tex` do lote deve apontar para o `.md` correspondente. Os metadados da obra (título, autor, direitos, idioma) ficam em `metadata.yaml` na raiz, copiado de `templates/metadata.yaml` quando ainda não existir.
+3. **Hierarquia de Títulos**: use `# Título do Capítulo`, `## Seção` e `### Subseção`.
+4. **Notas de Rodapé**: converta todas as notas originais para o padrão Markdown com identificador numérico. No corpo do texto use `[^1]` e, ao final da respectiva seção, agrupe as definições no formato `[^1]: Texto integral da nota.`
+5. **Figuras Recortadas**: insira as ilustrações tratadas via `crop_figure.py` com a sintaxe Markdown padrão `![Legenda original](figuras/fig_X_Y.png)`.
+6. **Validação de Fechamento**: no lugar da compilação LaTeX, execute:
+   1. Checagem de sintaxe Markdown: títulos na hierarquia correta, cada `[^n]` do corpo com sua definição `[^n]:` e vice-versa.
+   2. Validação de existência: todo caminho `figuras/...` referenciado no `.md` deve existir em `figuras/`.
+
+   Só depois das duas checagens atualize o lote para `"completed"` no `progress.json`.
