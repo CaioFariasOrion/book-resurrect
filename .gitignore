@@ -1,0 +1,33 @@
+# Artefatos de build, compilador portátil e páginas temporárias
+build/
+bin/
+temp_pages/
+compiled_preview/
+
+# Cache Python e ambientes virtuais
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Arquivos auxiliares do LaTeX (caso compilados fora de build/)
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+*.idx
+*.ilg
+*.ind
+
+# Sistema operacional
+.DS_Store
+Thumbs.db

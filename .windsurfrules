@@ -1,0 +1,24 @@
+# Regras Windsurf IDE (.windsurfrules) — `book-resurrect`
+
+Você está operando no repositório da skill universal **`book-resurrect`** (pipeline autônomo de recuperação editorial de livros escaneados em PDF para LaTeX vetorial compilável).
+
+Sempre que o usuário pedir para transcrever, digitalizar, converter ou recuperar um livro em PDF, mapear o sumário de um novo livro, ou continuar lotes do `progress.json` (*"Continue de onde parou"*, *"Rode os próximos N lotes"*), você **DEVE** carregar e obedecer integralmente às regras definidas em:
+
+- `.agent/skills/book-resurrect/SKILL.md`
+
+## Protocolo de Execução Estrita
+
+1. **Fonte Canônica**: Leia `.agent/skills/book-resurrect/SKILL.md` no início da tarefa.
+2. **Fase 0 — Inicialização (Quando `roadmap.json` não existe)**:
+   - Execute `python scripts/setup_env.py`.
+   - Copie `templates/main.tex` e `templates/preambulo.tex` para a raiz e crie as pastas `capitulos/`, `figuras/` e `build/`.
+   - Use `python scripts/slice_pdf.py --pdf "<arquivo.pdf>" --start 1 --end 15 --out build/temp_pages` para inspecionar visualmente o Sumário, calcular `offset = pagina_pdf - pagina_livro` e dividir o livro em lotes semânticos por subcapítulos completos (10 a 25 páginas, separando Teoria de Exercícios).
+   - Salve `roadmap.json` e `progress.json`, crie os arquivos `.tex` vazios em `capitulos/`, registre os `\include{...}` em `main.tex` e apresente a tabela de lotes ao usuário.
+3. **Fase 1 — Retomada e Controle de Lotes**:
+   - Leia `progress.json` e `roadmap.json` para retomar automaticamente do primeiro lote com status `"pending"`.
+   - Execute **1 lote por turno** (padrão) ou **$N$ lotes seguidos** quando solicitado explicitamente pelo usuário.
+   - **Proibição de OCR/Texto Bruto**: Nunca extraia texto bruto do PDF via bibliotecas Python (`pypdf`, `pdfminer`) nem carregue o PDF inteiro na memória. Renderize apenas as páginas `[pdf_start, pdf_end]` do lote atual com `python scripts/slice_pdf.py` e inspecione visualmente os arquivos `.png`.
+4. **Fase 2 — Transcrição LaTeX, Figuras e Auto-Cura (`Self-Healing`)**:
+   - Transcreva 100% do texto, fórmulas, exemplos e exercícios sem resumir, usando `amsmath`, `mathtools`, `booktabs` e as caixas de `preambulo.tex` (`definicao`, `teorema`, `exemplo`, `caixaformulas`).
+   - Recrie gráficos e geometria em `TikZ`/`pgfplots`; para ilustrações manuais não vetorizáveis, use `python scripts/crop_figure.py`.
+   - Ao final de cada lote, execute `python scripts/compile_check.py`, corrija eventuais erros LaTeX até obter `exit code 0`, revise visualmente as páginas em `build/compiled_preview/` e atualize `progress.json` para `"completed"`.

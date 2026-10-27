@@ -1,0 +1,19 @@
+---
+description: Protocolo autônomo book-resurrect para transcrição, recuperação editorial e conversão de livros escaneados (PDF) para LaTeX vetorial compilável.
+globs: ["**/*.tex", "**/*.pdf", "roadmap.json", "progress.json", "scripts/*.py"]
+alwaysApply: true
+---
+
+# Adaptador Cursor IDE — `book-resurrect`
+
+Sempre que o usuário solicitar a transcrição, digitalização, recuperação editorial de um livro em PDF para LaTeX, o mapeamento de sumário (Fase 0), ou a retomada/execução de lotes pendentes (`"Continue de onde parou"`, `"Execute os próximos N lotes"`), você **DEVE** ler e obedecer integralmente às instruções canônicas definidas em:
+
+👉 **[`.agent/skills/book-resurrect/SKILL.md`](../../.agent/skills/book-resurrect/SKILL.md)**
+
+## Regras Inegociáveis de Ativação Rápida
+1. **Fonte Única de Verdade**: Antes de executar qualquer ação, leia `.agent/skills/book-resurrect/SKILL.md`.
+2. **Persistência de Estado**: Verifique se `roadmap.json` e `progress.json` existem na raiz:
+   - Se **não existirem**, execute a **Fase 0** (`python scripts/setup_env.py`, fatiamento do sumário via `scripts/slice_pdf.py`, cálculo do `offset`, geração do `roadmap.json` e `progress.json`) e pare para validação do usuário.
+   - Se **já existirem**, opere na **Fase 1 e Fase 2**, retomando automaticamente a partir do primeiro lote com status `"pending"` em `progress.json`.
+3. **Proibição de Extração Bruta de Texto**: Nunca extraia texto bruto do PDF via código Python (`pypdf`, `pdfminer`, `get_text()`). Use exclusivamente `python scripts/slice_pdf.py` para renderizar o intervalo de páginas do lote atual em PNG e inspecione visualmente cada página.
+4. **Ciclo Fechado de Compilação**: Todo lote transcrito deve ser compilado com `python scripts/compile_check.py`, corrigido em loop até obter `exit code 0` e inspecionado visualmente em `build/compiled_preview/` antes de atualizar `progress.json` para `"completed"`.
