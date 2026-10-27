@@ -283,3 +283,8 @@ Aplique esta seção conforme o `translation_mode` gravado no cabeçalho de `roa
    2. Validação de existência: todo caminho `figuras/...` referenciado no `.md` deve existir em `figuras/`.
 
    Só depois das duas checagens atualize o lote para `"completed"` no `progress.json`.
+7. **Compilação Final (EPUB via Pandoc)**: para compilar o livro completo em EPUB/PDF após todos os lotes estarem concluídos, execute:
+   ```bash
+   pandoc templates/metadata.yaml capitulos/*.md -o build/livro_completo.epub --toc --toc-depth=2
+   ```
+   O `pandoc` precisa estar instalado na máquina. Se o comando falhar, informe o erro ao usuário em vez de ajustar os capítulos.

@@ -16,15 +16,17 @@
 - [x] Adaptadores multi-IDE: `.cursor/`, `CLAUDE.md`, `.windsurfrules`, `.github/`.
 - [x] Triagem Interativa e Protocolo de Tradução/Modernização integrados ao SKILL.md.
 - [x] Fluxo de Humanas (Markdown/EPUB) e templates/metadata.yaml criados.
+- [x] Provisionador global scripts/init_book.py implementado e operacional.
+- [x] Instrução de build EPUB via Pandoc formalizada.
 
 ## 4. Próximo Passo Imediato (Foco Ativo)
-- [ ] Implementação da Etapa 4: Scaffolding Global (scripts/init_book.py).
+- [x] Arquitetura v2.0 do motor concluída. Framework pronto para processamento de novos livros ou push remoto.
 
 ## 5. Backlog Priorizado e Critérios de Aceite
 - [x] **Etapa 1: Triagem Interativa.** Questionário pré-Fase 0 no `SKILL.md` com 3 decisões: (1) Exatas/LaTeX vs. Humanas/Markdown; (2) Transcrição Fiel vs. Tradução vs. Modernização de linguagem arcaica; (3) Figuras Híbridas (TikZ + recorte) vs. 100% recorte tratado.
 - [x] **Etapa 2: Tradução e Modernização Semântica.** Regras de tradução simultânea e atualização lexical no `SKILL.md`, preservando rigorosamente a notação matemática e as variáveis originais.
 - [x] **Etapa 3: Suporte a Humanas/Markdown.** Fluxo de saída em Markdown/EPUB para livros sem notação matemática, com regras próprias de estrutura, notas e figuras.
-- [ ] **Etapa 4: Scaffolding Global.** A skill provisiona a estrutura de pastas (`capitulos/`, `figuras/`, `build/`, `scripts/`, `templates/`) ao receber um caminho de PDF em qualquer diretório.
+- [x] **Etapa 4: Scaffolding Global.** A skill provisiona a estrutura de pastas (`capitulos/`, `figuras/`, `build/`, `scripts/`, `templates/`) ao receber um caminho de PDF em qualquer diretório.
 
 ## 6. Protocolo de Validação em Escala Menor (Definition of Done)
 Nenhuma tarefa ou lote pode ser marcado como `[x]` sem cumprir os 3 critérios verificáveis abaixo:
