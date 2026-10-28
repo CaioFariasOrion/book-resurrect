@@ -3,14 +3,27 @@
 \input{preambulo.tex}
 
 \title{\textbf{Título do Livro Recuperado}}
-\author{Autor Original \\ \small Edição Vetorial Recuperada via \texttt{book-resurrect}}
-\date{\today}
+\author{Autor Original}
+\date{}
 
 \begin{document}
 
+% 1. Pagina 1: Capa (se existir capa.png, capa.jpg ou capa.jpeg na raiz)
+\inserircapa
+
+% 2. Pagina 2: Folha de Rosto centralizada e limpa
+\folhaderosto
+
+% 3. Pagina 3: Ficha Tecnica e Manifesto Institucional
+\manifestoeditorial
+
+% 4. Pagina 4: Sumario sem quebras duplas
+\begingroup
+\let\cleardoublepage\clearpage
 \frontmatter
-\maketitle
 \tableofcontents
+\clearpage
+\endgroup
 
 \mainmatter
 % Os capítulos gerados na Fase 0 e transcritos na Fase 1/2 são incluídos abaixo:

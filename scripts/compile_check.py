@@ -12,10 +12,13 @@ Responsabilidades:
 """
 
 import argparse
+import json
 import platform
+import re
 import shutil
 import subprocess
 import sys
+import unicodedata
 from pathlib import Path
 
 WORKSPACE_ROOT = Path(__file__).resolve().parent.parent
@@ -119,6 +122,78 @@ def extract_error_tail(stdout_text: str, stderr_text: str, log_file: Path, max_l
     return "\n".join(tail)
 
 
+
+
+def _sanitize_filename(text: str) -> str:
+    """Remove acentos, comandos LaTeX e caracteres invalidos para nomes de arquivo."""
+    # Remove comandos LaTeX comuns (ex: \textbf, \textit, \small, etc.)
+    text = re.sub(r"\\[a-zA-Z]+", "", text)
+    text = re.sub(r"[{}\\]", "", text)
+    text = unicodedata.normalize("NFKD", text).encode("ASCII", "ignore").decode("ASCII")
+    text = re.sub(r"[^a-zA-Z0-9]+", "_", text).strip("_")
+    return text
+
+
+def dispatch_semantic_pdf(compiled_pdf: Path, main_tex: Path) -> Path | None:
+    """Copia o PDF compilado para a raiz com nome limpo baseado no titulo e autor."""
+    title = ""
+    author = ""
+    
+    # 1. Tenta obter de roadmap.json se presente
+    workspace_dir = main_tex.resolve().parent
+    roadmap_path = workspace_dir / "roadmap.json"
+    source_pdf_name = ""
+    if roadmap_path.is_file():
+        try:
+            data = json.loads(roadmap_path.read_text(encoding="utf-8"))
+            title = data.get("book_title", "")
+            author = data.get("author", "")
+            source_pdf_name = Path(data.get("source_pdf", "")).name
+        except Exception:
+            pass
+
+    # 2. Tenta extrair de main.tex se faltar algo
+    if (not title or not author) and main_tex.is_file():
+        try:
+            for line in main_tex.read_text(encoding="utf-8", errors="replace").splitlines():
+                stripped = line.strip()
+                if not title and stripped.startswith(r"\title"):
+                    t_val = stripped[len(r"\title"):].strip()
+                    if t_val.startswith("{") and t_val.endswith("}"):
+                        t_val = t_val[1:-1]
+                    title = t_val.split(r"\\")[0].strip()
+                if not author and stripped.startswith(r"\author"):
+                    a_val = stripped[len(r"\author"):].strip()
+                    if a_val.startswith("{") and a_val.endswith("}"):
+                        a_val = a_val[1:-1]
+                    author = a_val.split(r"\\")[0].strip()
+        except Exception:
+            pass
+
+    clean_title = _sanitize_filename(title)
+    clean_author = _sanitize_filename(author)
+
+    if clean_title and clean_author:
+        dest_name = f"{clean_title}_{clean_author}.pdf"
+    elif clean_title:
+        dest_name = f"{clean_title}.pdf"
+    else:
+        dest_name = f"{main_tex.stem}_completo.pdf"
+
+    # Previne colisao com o PDF escaneado original
+    if source_pdf_name and dest_name.lower() == source_pdf_name.lower():
+        dest_name = f"{Path(dest_name).stem}_Recuperado.pdf"
+
+    dest_path = workspace_dir / dest_name
+    try:
+        shutil.copy2(compiled_pdf, dest_path)
+        print(f"[OK] PDF final despachado para a raiz: {dest_path.name}")
+        return dest_path
+    except Exception as exc:
+        print(f"[AVISO] Nao foi possivel copiar PDF para a raiz: {exc}", file=sys.stderr)
+        return None
+
+
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -182,6 +257,8 @@ def main() -> int:
         return 1
 
     print(f"[OK] Compilação concluída com sucesso: {compiled_pdf.as_posix()}")
+
+    dispatch_semantic_pdf(compiled_pdf, args.main)
 
     preview_dir = args.outdir / "compiled_preview"
     previews = render_last_compiled_pages(

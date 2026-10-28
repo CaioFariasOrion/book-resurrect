@@ -44,6 +44,8 @@ def check_and_install_python_deps() -> bool:
         missing.append("pymupdf")
     if importlib.util.find_spec("PIL") is None:
         missing.append("pillow")
+    if importlib.util.find_spec("pypdf") is None:
+        missing.append("pypdf")
 
     if not missing:
         print("[OK] Dependências Python verificadas: PyMuPDF (fitz) e Pillow (PIL).")

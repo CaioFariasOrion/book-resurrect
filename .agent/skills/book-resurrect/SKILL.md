@@ -49,35 +49,35 @@ Se `scripts/` e `templates/` já existirem, ignore esta seção.
 ---
 
 ## FASE DE TRIAGEM INTERATIVA (Pré-Fase 0)
-*(Execute esta fase quando um novo livro em PDF for fornecido e `roadmap.json` ainda NÃO existir. Se `roadmap.json` já existir, pule direto para a Fase 1.)*
+*(Ponto de Entrada Padronizado: o comando mestre é exclusivamente `@book-resurrect @livro.pdf`. A Triagem Interativa Guiada é sempre obrigatória quando `roadmap.json` não existir. Se `roadmap.json` já existir, pule direto para a Fase 1.)*
 
 1. Renderize as 5 primeiras páginas do PDF e inspecione visualmente para entender o tipo de obra (capa, idioma, presença de fórmulas, gravuras):
    ```bash
    python scripts/slice_pdf.py --pdf "<arquivo.pdf>" --start 1 --end 5 --out build/temp_pages
    ```
-2. Apresente ao usuário as 3 perguntas abaixo e AGUARDE as respostas. Não inicie a Fase 0 sem elas.
+2. Apresente ao usuário a triagem questionando nos 3 blocos abaixo e AGUARDE as respostas. Não inicie a Fase 0 sem elas.
 
-   **Pergunta 1: Natureza da Obra**
-   - `[A] Exatas / Técnico`: gera a esteira LaTeX/TikZ.
-   - `[B] Humanas / Geral`: gera a esteira Markdown/EPUB.
+   **Bloco 1 (Propósito):**
+   - `(1) Resgate Fiel`: mantém idioma e grafia do original.
+   - `(2) Modernização Didática` (sob `<lexical_modernization_rules>`): atualiza português arcaico para a ortografia contemporânea.
+   - `(3) Tradução Técnica` (sob `<translation_syntax_lock>`): traduz para outro idioma mantendo a notação algébrica intocada.
 
-   **Pergunta 2: Tratamento de Texto e Idioma**
-   - `[A] Transcrição Fiel (1:1)`: mantém idioma e grafia do original.
-   - `[B] Tradução Semântica`: traduz para outro idioma (ex.: ES/EN para PT-BR).
-   - `[C] Modernização Lexical`: atualiza português arcaico para a ortografia contemporânea.
+   **Bloco 2 (Natureza):**
+   - `(A) Exatas (LaTeX/TikZ)`: gera a esteira LaTeX/TikZ.
+   - `(B) Humanas (Markdown/EPUB)`: gera a esteira Markdown/EPUB.
 
-   **Pergunta 3: Estratégia de Figuras**
-   - `[A] Híbrido`: TikZ vetorial para geometria e gráficos, recorte para gravuras e fotos.
-   - `[B] 100% Recorte Digital Tratado`: todas as figuras via `crop_figure.py`.
+   **Bloco 3 (Figuras):**
+   - `(H) Híbrido inteligente`: TikZ vetorial para geometria e gráficos, recorte para gravuras e fotos.
+   - `(R) Recorte total`: todas as figuras via `crop_figure.py`.
 3. Persista as respostas no cabeçalho do `roadmap.json` (criado no Passo 0.4), nos campos `"project_mode"`, `"translation_mode"` e `"figure_mode"`, com estes valores:
 
    | Campo | Valores aceitos |
    | :--- | :--- |
-   | `project_mode` | `"exatas_latex"` ou `"humanas_markdown"` |
-   | `translation_mode` | `"fiel"`, `"traducao"` ou `"modernizacao"` |
-   | `figure_mode` | `"hibrido"` ou `"recorte_total"` |
+   | `project_mode` | `"exatas_latex"` (para `A`) ou `"humanas_markdown"` (para `B`) |
+   | `translation_mode` | `"fiel"` (para `1`), `"modernizacao"` (para `2`) ou `"traducao"` (para `3`) |
+   | `figure_mode` | `"hibrido"` (para `H`) ou `"recorte_total"` (para `R`) |
 
-   Se a resposta 2 for `[B]`, registre também o idioma de destino (ex.: `"target_language": "pt-BR"`) no mesmo cabeçalho.
+   Se o Bloco 1 for `(3)`, registre também o idioma de destino (ex.: `"target_language": "pt-BR"`) no mesmo cabeçalho.
 4. Os modos gravados valem para todos os lotes. Na Fase 2, siga `figure_mode` na seção 2.3 e `translation_mode` na seção 2.5.
 
 ---
@@ -290,13 +290,17 @@ Aplique esta seção conforme o `translation_mode` gravado no cabeçalho de `roa
 1. **Inviolabilidade Notacional (Regra de Ouro)**:
    - Toda a álgebra, operadores, limites, variáveis ($x$, $y$, $z$, $\alpha$), funções matemáticas e índices originais devem permanecer **estritamente intocados**. Nada de renomear variável, trocar símbolo ou reescrever expressão para "ficar mais natural" no idioma de destino.
    - A tradução e a modernização atuam só na prosa ao redor das fórmulas, nunca dentro dos ambientes matemáticos.
-2. **Tradução Conceitual** (`translation_mode: "traducao"`):
+2. **Tradução Conceitual** (`translation_mode: "traducao"`, sob `<translation_syntax_lock>`):
+   <translation_syntax_lock>
    - Traduza os termos estruturais e pedagógicos para o idioma de destino registrado em `target_language`. Exemplos para ES para PT-BR: *Demostración* → *Demonstração*, *Ejemplo* → *Exemplo*, *Corolario* → *Corolário*.
    - Os rótulos que o `preambulo.tex` já gera (`Definição`, `Teorema`, `Exemplo`) devem ficar coerentes com o idioma de destino.
    - Mantenha a estrutura original: mesma ordem de parágrafos, mesmas notas de rodapé, mesmos itens `a)`, `b)`, `c)`. Traduzir não autoriza resumir.
-3. **Modernização de Arcaísmos** (`translation_mode: "modernizacao"`):
+   </translation_syntax_lock>
+3. **Modernização de Arcaísmos** (`translation_mode: "modernizacao"`, sob `<lexical_modernization_rules>`):
+   <lexical_modernization_rules>
    - Atualize grafias antigas para o padrão ortográfico contemporâneo. Exemplo: *pharmacia* → *farmácia*. Ao ajustar uma forma verbal ou pronominal (como *determina-se*), preserve a concordância correta.
    - Não descaracterize o estilo formal da época: mantenha o vocabulário, o tom e a construção das frases, trocando apenas a grafia e as formas que o leitor atual não reconheceria.
+   </lexical_modernization_rules>
 4. **Registro de Dúvidas**: quando um termo for ambíguo ou não tiver equivalente consagrado, mantenha o original entre parênteses na primeira ocorrência e anote o caso em `notes` do lote no `progress.json`.
 
 ### 2.6 — Fluxo Dual-Engine: Modo Humanas / Markdown
@@ -350,6 +354,10 @@ Ao ser acionado para processamento ponta a ponta sem intervenção humana:
 - **Escopo de Escrita Isolado:** Escrever exclusivamente no arquivo `.tex` do lote designado (`capitulos/<nome_unico>.tex`).
 - **Isolamento Gráfico:** Utilizar prefixo exclusivo por lote em figuras recortadas (`figuras/<lote>_fig_Y.png`) ou construir ilustrações diretamente em TikZ vetorial no corpo do arquivo `.tex`.
 - **Fatiamento Restrito:** Executar `slice_pdf.py` estritamente para o intervalo de páginas (`--start` e `--end`) do seu lote.
+- **Diretrizes Tipográficas Obrigatórias:**
+  - **PROIBIDO** o uso de `tabular` para diagramação de listas de exercícios (obrigatório o uso de `tasks` ou `multicol` + `enumerate`).
+  - **PROIBIDO** englobar múltiplos exemplos, tabelas ou gráficos TikZ dentro de caixas fechadas `tcolorbox`. Exemplos devem ser sempre texto corrido com `\begin{exemplo}`.
+  - Tabelas matemáticas e tabelas-verdade devem usar o estilo respirável `booktabs`, evitando grades completas claustrofóbicas em todas as células.
 - **Bloqueio de Concorrência (Inviolável):**
   - PROIBIDO ler, abrir ou editar `main.tex`.
   - PROIBIDO modificar `roadmap.json`, `progress.json` ou `CONTEXT.md`.
@@ -363,3 +371,32 @@ Ao ser acionado para processamento ponta a ponta sem intervenção humana:
   - Executar `python scripts/compile_check.py` (duas passadas de `pdflatex`).
   - Em caso de erro de sintaxe residual, isolar a linha indicada no log, corrigir diretamente no arquivo `.tex` do capítulo afetado e recompilar até obter `Exit Code: 0`.
 - **Governança:** Atualizar `progress.json` e registrar a consolidação final no `CONTEXT.md`.
+
+---
+
+## FASE 4: Revisão Editorial e Auto-Cura Desacoplada (Gatilho: `@book-resurrect revisar`)
+
+Estágio independente acionado sob demanda após a compilação do `main.pdf`. Opera em duas camadas complementares:
+
+### Camada 1: Auto-Cura Geométrica de Layout
+1. O agente varre `build/main.log` e localiza todas as ocorrências de `Overfull \hbox`.
+2. Ajusta tabelas que estouram a margem (aplicando `tabularx`, redimensionamento proporcional ou ajuste de `\tabcolsep`).
+3. Inspeciona blocos `TikZ` e `pgfplots`, injetando `fill=white, inner sep=1.5pt` em nós posicionados sobre curvas ou retas para impedir colisão visual de rótulos.
+4. Recompila o documento via `python scripts/compile_check.py` e valida visualmente as páginas afetadas.
+
+### Camada 2: Errata Humana-no-Loop
+1. **Trava Ética Rígida:** A IA é proibida de alterar deduções matemáticas ou o texto do autor original de forma silenciosa.
+2. Divergências matemáticas, saltos lógicos ou gralhas históricas detectadas em comparação contra o scan original devem ser catalogadas no arquivo `ERRATA.md` na raiz do projeto.
+3. Para cada item registrado em `ERRATA.md`, apresente a localização (capítulo, página do original e trecho), a descrição da divergência e as opções padronizadas para escolha do usuário:
+   - `[M] Manter` (preservar exatamente como impresso no original)
+   - `[C] Corrigir no texto` (aplicar a correção diretamente no `.tex` / `.md`)
+   - `[N] Nota de Rodapé` (manter o texto original e inserir `\footnote{Nota de revisão: ...}` explicando a correção)
+
+
+### Camada 3: Empacotamento Plug-and-Play e Despacho Semântico
+1. **Detecção e Injeção Automática de Capa:**
+   - O template `main.tex` executa `\inserircapa` na abertura do documento.
+   - Se existir `capa.png`, `capa.jpg` ou `capa.jpeg` na raiz do projeto, o LaTeX insere automaticamente a primeiríssima página em sangria total (`\newgeometry{margin=0pt}`) com largura e altura correspondentes ao papel B5 (`\paperwidth` e `\paperheight`), restaurando a geometria em seguida para a folha de rosto. Caso nenhuma imagem esteja presente, o documento compila normalmente sem ela.
+2. **Despacho Semântico para a Raiz:**
+   - Após a compilação com sucesso (`exit code 0`), `scripts/compile_check.py` lê o título da obra e o autor (de `roadmap.json` ou `main.tex`), sanitiza o nome e copia `build/main.pdf` diretamente para a raiz do repositório como `<Titulo>_<Autor>.pdf`.
+   - Se o nome coincidir com o PDF escaneado original (`source_pdf`), adiciona o sufixo `_Recuperado.pdf` para prevenir sobrescrita.
