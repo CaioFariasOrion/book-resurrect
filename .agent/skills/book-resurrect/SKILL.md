@@ -94,13 +94,18 @@ Se `scripts/` e `templates/` já existirem, ignore esta seção.
 2. Verifique se `main.tex` e `preambulo.tex` existem na raiz do workspace. Se não existirem, copie-os de `templates/main.tex` e `templates/preambulo.tex` para a raiz (`.`).
 3. Garanta que os diretórios `capitulos/`, `figuras/` e `build/` existam na raiz do workspace.
 
-### Passo 0.2 — Leitura Visual do Sumário
+### Passo 0.2 — Inspeção de Geometria e Leitura Visual do Sumário
 1. Identifique o arquivo `.pdf` do livro na raiz do workspace.
-2. Renderize as primeiras 15 páginas para localizar o Sumário (Índice) e a primeira página numerada do conteúdo:
+2. **Inspeção de Geometria do PDF:** Antes de fatiar ou mapear o sumário, execute:
+   ```bash
+   python scripts/split_double_pages.py "<livro.pdf>"
+   ```
+   Se o script gerar `<livro>_single_pages.pdf`, atualize automaticamente o ponteiro do livro (`source_pdf`) para esse arquivo vertical, prosseguindo com a leitura do sumário e a geração do `roadmap.json`.
+3. Renderize as primeiras 15 páginas para localizar o Sumário (Índice) e a primeira página numerada do conteúdo:
    ```bash
    python scripts/slice_pdf.py --pdf "<arquivo.pdf>" --start 1 --end 15 --out build/temp_pages
    ```
-3. Inspecione visualmente as imagens `build/temp_pages/page_001.png` até `page_015.png`. Se o sumário se estender além da página 15, renderize páginas adicionais (ex.: `--start 16 --end 25`).
+4. Inspecione visualmente as imagens `build/temp_pages/page_001.png` até `page_015.png`. Se o sumário se estender além da página 15, renderize páginas adicionais (ex.: `--start 16 --end 25`).
 
 ### Passo 0.3 — Cálculo de Offset e Divisão Semântica por Subcapítulos
 1. **Cálculo do Deslocamento (`offset`)**:
@@ -319,6 +324,13 @@ Aplique esta seção conforme o `translation_mode` gravado no cabeçalho de `roa
 Esta fase suporta dois fluxos: execução manual (multi-chat independente) ou execução 100% autônoma (*Zero-Touch*) por meio da ferramenta nativa `invoke_subagent`, operando com esteira deslizante de concorrência controlada (3 a 4 trabalhadores simultâneos).
 
 ### 1. Modo Zero-Touch (Gatilho: `@book-resurrect Modo Autônomo` ou `recupere este livro`)
+> Ao receber `@book-resurrect recupere este livro` em uma pasta com apenas um arquivo PDF:
+> 1. Executa auto-scaffolding se necessário.
+> 2. Roda a verificação de folha dupla via `split_double_pages.py`.
+> 3. Gera `roadmap.json` e `progress.json`.
+> 4. Dispara o Worker Pool reativo com até 3 subagentes concorrentes via `invoke_subagent`.
+> 5. Ao término da fila, compila o `main.pdf` via Modo Maestro.
+
 Ao ser acionado para processamento ponta a ponta sem intervenção humana:
 1. **Inspeção de Fila:** O Maestro lê `roadmap.json` e `progress.json` e identifica todos os lotes com status `"pending"`.
 2. **Inicialização do Pool (Concorrência Máxima = 3 a 4):**
