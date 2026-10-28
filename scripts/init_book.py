@@ -13,7 +13,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-SUBDIRS = ("capitulos", "figuras", "build", "scripts", "templates")
+SUBDIRS = ("capitulos", "figuras", "build", "scripts", "templates", "assets")
 
 # Itens que fazem a skill funcionar nas IDEs; sem eles a pasta nova não ativa o protocolo.
 SKILL_ITEMS = (".agent", ".cursor", ".github", "CLAUDE.md", ".windsurfrules", ".gitignore")
@@ -83,6 +83,8 @@ def init_book(pdf: Path, dest: Path) -> dict:
     summary = {"scripts": 0, "templates": 0, "skill_items": [], "pdf": None, "context": None}
     summary["scripts"] = copy_tree(REPO_ROOT / "scripts", dest / "scripts")
     summary["templates"] = copy_tree(REPO_ROOT / "templates", dest / "templates")
+    if (REPO_ROOT / "assets").is_dir():
+        summary["assets"] = copy_tree(REPO_ROOT / "assets", dest / "assets")
 
     for name in SKILL_ITEMS:
         src = REPO_ROOT / name

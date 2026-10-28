@@ -1,192 +1,148 @@
-# 📚 `book-resurrect` — Pipeline Autônomo de Recuperação de Livros Escaneados para LaTeX Vetorial
+# book-resurrect: Pipeline Editorial de Recuperacao de Livros para LaTeX e Markdown
 
-O **`book-resurrect`** é uma *skill* universal e repositório de automação editorial que transforma livros antigos ou escaneados em PDF (mesmo sem camada de OCR, com manchas de scanner ou repletos de equações matemáticas e gráficos) em um projeto **LaTeX modular, 100% vetorial, padronizado em formato B5 e pronto para compilação**.
+O **book-resurrect** e um framework editorial e skill universal para agentes de inteligencia artificial (Antigravity, Cursor, Claude Code, Windsurf e GitHub Copilot). Seu objetivo e converter livros escaneados em PDF (mesmo com baixa qualidade, manchas de scanner ou notacao matematica densa) em projetos modulares, vetoriais e compilaveis.
 
-Projetado com adaptadores nativos para **Antigravity**, **Cursor**, **Claude Code**, **Windsurf** e **GitHub Copilot**, o pipeline opera por meio de **visão multimodal fatiada**, **persistência de estado em JSON** (`roadmap.json` e `progress.json`) e um **ciclo fechado de auto-cura de compilação (`Self-Healing`)** usando o compilador LaTeX portátil **Tectonic**.
-
----
-
-## ✨ Principais Diferenciais
-
-- **Visão Multimodal sem Alucinação de OCR**: Proíbe a extração de texto bruto quebrado (`pypdf`/`pdfminer`) e nunca carrega o PDF inteiro na memória. O agente fatia apenas o lote atual em imagens PNG (`180 DPI`) e lê visualmente página por página.
-- **Divisão Semântica por Subcapítulos**: Mapeia o Sumário calculando o deslocamento exato (`offset = pagina_pdf - pagina_livro`) e divide o livro em lotes coesos de 10 a 25 páginas, separando sempre **Teoria** de **Listas de Exercícios/Resoluções** sem cortar demonstrações ao meio.
-- **Estratégia Híbrida de Figuras**:
-  - Gráficos de funções, eixos cartesianos e diagramas geométricos são recriados nativamente em código vetorial **`TikZ` / `pgfplots`**.
-  - Ilustrações artísticas ou desenhos manuais não vetorizáveis são recortados e limpos com ganho de contraste via `scripts/crop_figure.py`.
-- **Zero Configuração Manual de LaTeX**: O script `scripts/setup_env.py` instala automaticamente `PyMuPDF` + `Pillow` e baixa o binário portátil do **Tectonic** em `./bin/`, dispensando instalações pesadas de TeX Live ou MiKTeX.
-- **Persistência entre Sessões de Chat**: Todo o progresso fica salvo em `roadmap.json` e `progress.json`. Você pode fechar a IDE a qualquer momento, abrir um novo chat dias depois e pedir apenas *"Continue de onde parou"*.
+Na versao **v2.1**, o ecossistema consolida o Design System academico no formato editorial B5 (baseado nos padroes da SBM e Springer), provisionamento isolado por obra, revisao editorial desacoplada com trava etica em `ERRATA.md` e empacotamento com injecao automatica de capa e despacho semantico para a raiz.
 
 ---
 
-## 🗂️ Arquitetura do Repositório
+## 1. Destaques da Arquitetura v2.1
+
+- **Visao Multimodal Fatiada:** Nao utiliza extratores de texto bruto quebrados (como pypdf ou pdfminer). O agente fatia o PDF em PNGs de 180 DPI por lote via `slice_pdf.py` e realiza a leitura visual direta.
+- **Deteccao e Divisao de Folha Dupla:** Identifica escaneamentos abertos em folha dupla (booklet) via `split_double_pages.py`, fatiando-os verticalmente em paginas simples ordenadas.
+- **Triagem Interativa em 3 Blocos:** Classifica a obra antes da geracao do estado (`roadmap.json` e `progress.json`):
+  1. *Proposito:* Resgate Fiel, Modernizacao Didatica ou Traducao Tecnica.
+  2. *Natureza:* Exatas (LaTeX/TikZ) ou Humanas (Markdown/EPUB).
+  3. *Figuras:* Hibrido inteligente (código TikZ e recorte) ou Recorte total.
+- **Design System SBM/Springer:** Preambulo academico padronizado em B5 com microtipografia (`microtype`), pacotes `tasks`, `multicol`, `tabularx`, caixas com fio de 2.5pt (`definicao`, `teorema`, `proposicao`, `lema`, `caixaformulas`), exemplos em texto corrido e tabelas no padrao `booktabs`.
+- **Fase 4 Desacoplada (Revisao e Errata):** Auditoria acionada sob demanda via `@book-resurrect revisar`:
+  1. *Camada 1 (Auto-Cura de Layout):* Varre `build/main.log`, localiza transbordamentos de margem (`Overfull \hbox`), reconfigura tabelas e insere respiro opaco (`fill=white, inner sep=1.5pt`) em rotulos de graficos TikZ.
+  2. *Camada 2 (Errata Humana-no-Loop):* Proibe a IA de alterar raciocinios matematicos ou o texto do autor silenciosamente. Divergencias sao catalogadas em `ERRATA.md` com escolhas padronizadas (`[M] Manter`, `[C] Corrigir no texto`, `[N] Nota de Rodape`).
+  3. *Camada 3 (Empacotamento):* Insere a capa sangrada na Pagina 1, Folha de Rosto na Pagina 2, Ficha Tecnica/Manifesto institucional com a logo da fenix na Pagina 3, Sumario na Pagina 4 e copia o PDF final para `./<Titulo>_<Autor>.pdf`.
+- **Modo Autonomo Zero-Touch (Fase 3):** Suporta esteira paralela com pool de ate 3 subagentes concorrentes operando em arquivos `.tex` isolados, com consolidacao pelo Modo Maestro.
+
+---
+
+## 2. Estrutura do Repositorio
 
 ```text
 .
 ├── .agent/
 │   └── skills/
 │       └── book-resurrect/
-│           └── SKILL.md           # Protocolo mestre canônico da Skill (3 Fases)
-├── .cursor/
-│   └── rules/
-│       └── book-resurrect.mdc     # Adaptador automático para Cursor IDE
-├── .github/
-│   └── copilot-instructions.md    # Adaptador automático para GitHub Copilot
-├── CLAUDE.md                      # Adaptador automático para Claude Code (CLI)
-├── .windsurfrules                 # Adaptador automático para Windsurf IDE
+│           └── SKILL.md             # Protocolo canônico completo da Skill (Fases 0 a 4)
+├── .cursor/rules/                   # Adaptador de regras para Cursor IDE
+├── .github/                         # Adaptador para GitHub Copilot
+├── CLAUDE.md                        # Adaptador para Claude Code CLI
+├── .windsurfrules                   # Adaptador para Windsurf IDE
+├── assets/
+│   └── logo-blue.png                # Logo oficial da Book Resurrect para a Ficha Tecnica
 ├── scripts/
-│   ├── setup_env.py               # Instala/verifica PyMuPDF, Pillow e binário portátil do Tectonic
-│   ├── slice_pdf.py               # Renderiza intervalos de páginas do PDF em PNG (150-200 DPI)
-│   ├── crop_figure.py             # Recorta e binariza figuras manuais não vetorizáveis
-│   └── compile_check.py           # Compila main.tex via Tectonic e renderiza páginas compiladas
+│   ├── init_book.py                 # Provisionador de pastas isoladas para novos livros
+│   ├── setup_env.py                 # Instalador e verificador de ambiente e Tectonic
+│   ├── split_double_pages.py         # Divisao vertical de folhas duplas em formato paisagem
+│   ├── slice_pdf.py                 # Renderizador de intervalos de paginas do PDF em PNG
+│   ├── crop_figure.py               # Recorte e limpeza binarizada de figuras manuais
+│   └── compile_check.py             # Compilador Tectonic, self-healing e despacho do PDF
 ├── templates/
-│   ├── main.tex                   # Arquivo mestre LaTeX modular (classe book, B5)
-│   └── preambulo.tex              # Pacotes matemáticos, TikZ, booktabs e caixas tcolorbox
-├── .gitignore                     # Ignora build/, bin/, temp_pages/, __pycache__/
-└── README.md                      # Documentação completa de uso e arquitetura
+│   ├── main.tex                     # Estrutura mestra com abertura editorial internacional
+│   ├── preambulo.tex                # Preambulo canônico SBM/Springer v2.1
+│   └── metadata.yaml                # Metadados para compilacao EPUB via Pandoc
+├── requirements.txt                 # Dependencias Python oficiais (pymupdf, Pillow, pypdf)
+├── CONTRIBUTING.md                  # Guia de contribuicao e padroes tecnicos
+└── README.md                        # Documentacao tecnica do projeto
 ```
 
-Quando um livro está em processo de recuperação, o agente cria automaticamente na raiz:
-- `roadmap.json`: Mapa completo de subcapítulos, intervalos de páginas (`book_start`/`book_end` vs. `pdf_start`/`pdf_end`) e arquivos `.tex` de destino.
-- `progress.json`: Estado de execução de cada lote (`pending`, `in_progress`, `completed`).
-- `main.tex` e `preambulo.tex`: Copiados de `templates/` e atualizados com os `\include{capitulos/capXX}`.
-- `capitulos/`: Arquivos `.tex` modulares de cada capítulo.
-- `figuras/`: Figuras recortadas e tratadas via `crop_figure.py`.
-- `build/`: Diretório de saída contendo `build/main.pdf`, logs de compilação e `build/compiled_preview/`.
-
 ---
 
-## 🚀 Como Usar Passo a Passo
+## 3. Instalacao e Requisitos
 
-### 1. Preparação Inicial
-1. Clone este repositório (ou copie sua estrutura para a pasta do seu projeto).
-2. Coloque o arquivo `.pdf` escaneado do livro na raiz do workspace (ex.: `meu_livro.pdf`).
+### Requisitos do Sistema
+- Python 3.10 ou superior.
+- Git instalado.
+- Conexao com a internet no primeiro uso para download do compilador portatil Tectonic e pacotes TeX.
 
-### 2. Iniciar um Livro Novo (`Fase 0` — Mapeamento e Setup)
-Abra o chat do agente na sua IDE favorita (Antigravity, Cursor, Claude Code, Windsurf ou GitHub Copilot) e envie:
-
-> **"Inicie a recuperação do livro `meu_livro.pdf` executando a Fase 0 da skill `book-resurrect`."**
-
-O que o agente fará automaticamente na **Fase 0**:
-1. Executará `python scripts/setup_env.py` para garantir `PyMuPDF`, `Pillow` e o compilador portátil `tectonic`.
-2. Copiará `templates/main.tex` e `templates/preambulo.tex` para a raiz e criará `capitulos/`, `figuras/` e `build/`.
-3. Renderizará as primeiras 15 páginas do PDF em `build/temp_pages/` e lerá visualmente o **Sumário**.
-4. Calculará o deslocamento exato de páginas (`offset = pagina_pdf - pagina_livro`) e dividirá o livro em lotes semânticos por subcapítulos completos (separando Teoria de Exercícios).
-5. Salvará `roadmap.json` e `progress.json`, criará os arquivos `.tex` vazios em `capitulos/` e apresentará a tabela completa de lotes para sua confirmação.
-
----
-
-### 3. Executar Lotes de Transcrição (`Fase 1` e `Fase 2`)
-
-#### Opção A — Executar 1 lote por vez (Comportamento Padrão com Revisão)
-Para transcrever um único lote, compilar e revisar o resultado antes de prosseguir:
-
-> **"Execute o próximo lote pendente."**
-
-#### Opção B — Executar $N$ lotes seguidos em sequência
-Se desejar que o agente avance múltiplos subcapítulos em um único turno (compilando e salvando `progress.json` ao final de cada lote):
-
-> **"Rode 3 lotes seguidos."** *(ou a quantidade $N$ desejada)*
-
----
-
-### 4. Como Continuar de Onde Parou em um Novo Chat
-Quando o histórico de conversa ficar longo ou você reabrir a IDE em outro dia, basta abrir uma **nova sessão de chat** limpa e digitar:
-
-> **"Continue de onde parou."**
-> *(ou **"Continue de onde parou e execute os próximos 2 lotes."**)*
-
-O agente lerá imediatamente `progress.json` e `roadmap.json`, identificará todos os lotes já marcados como `"completed"` sem refazê-los e retomará exatamente no primeiro lote com status `"pending"`.
-
----
-
-## Fluxo v2.0: Modo Global, Provisionador e Dual-Engine
-
-Esta seção descreve os recursos adicionados depois do fluxo básico acima. Arquivos novos: `scripts/init_book.py`, `templates/metadata.yaml` e `CONTEXT.md` (quadro de bordo com o backlog e as regras de governança para agentes).
-
-### Modo global (`@book-resurrect`)
-Com a skill instalada globalmente, você abre uma pasta vazia na IDE, anexa o PDF e chama a skill pelo nome (por exemplo, `@book-resurrect`, ou citando `book-resurrect` no pedido). Se `scripts/` e `templates/` não existirem na pasta, a skill localiza o repositório mestre e roda o `init_book.py` com `--dest .` para provisionar o ambiente, e só depois abre a Triagem Interativa.
-
-Para instalar a skill globalmente (Antigravity), copie o `SKILL.md` para a pasta global de skills do usuário:
-
+### Instalacao das Dependencias Python
 ```bash
-# Windows (PowerShell)
+pip install -r requirements.txt
+```
+
+### Configuracao Inicial do Ambiente
+Execute o verificador oficial para certificar os modulos Python e baixar o executavel do Tectonic em `./bin/`:
+```bash
+python scripts/setup_env.py
+```
+
+### Instalacao Global da Skill no Antigravity / Gemini
+Para disponibilizar a skill em qualquer projeto no computador:
+```powershell
+# Criar diretorio e copiar SKILL.md
 New-Item -ItemType Directory -Force "$env:USERPROFILE\.gemini\config\skills\book-resurrect"
 Copy-Item ".agent\skills\book-resurrect\SKILL.md" "$env:USERPROFILE\.gemini\config\skills\book-resurrect\SKILL.md"
+
+# Criar juncao para acesso central dos scripts pelo motor
+New-Item -ItemType Junction -Force -Path "$env:USERPROFILE\.gemini\book-resurrect-engine" -Target (Get-Location).Path
 ```
-
-Pontos de atenção do modo global:
-- O repositório mestre precisa estar clonado na máquina. O caminho padrão que o `SKILL.md` procura é o do mantenedor; em outra máquina a skill pergunta onde ele está.
-- Depois de editar o `SKILL.md` do repositório, copie-o de novo para a pasta global, senão a versão global fica desatualizada.
-
-### Provisionador via terminal (`init_book.py`)
-Cria a pasta de um livro com `capitulos/`, `figuras/`, `build/`, `scripts/`, `templates/`, copia o PDF, a skill e os adaptadores de IDE e gera um `CONTEXT.md` pronto para a triagem:
-
-```bash
-python scripts/init_book.py --pdf "C:/caminho/livro.pdf" --dest "C:/livros/meu-livro"
-```
-
-Depois, abra a pasta criada na IDE e peça a Triagem Interativa. O script recusa uma pasta que já tenha `roadmap.json`, para não sobrescrever um livro em andamento.
-
-### Dual-Engine: LaTeX/TikZ e Markdown/EPUB
-Na Triagem Interativa, a pergunta 1 define o `project_mode` gravado no `roadmap.json`:
-
-| `project_mode` | Saída | Fechamento de cada lote |
-| :--- | :--- | :--- |
-| `exatas_latex` | `capitulos/capXX.tex`, figuras em TikZ ou recorte | `python scripts/compile_check.py` com `exit code 0` |
-| `humanas_markdown` | `capitulos/capXX.md`, notas `[^1]`, figuras `![legenda](figuras/fig_X_Y.png)` | Sintaxe Markdown e existência dos arquivos em `figuras/` |
-
-No modo Markdown, os metadados da obra (título, autor, direitos, idioma) ficam em `templates/metadata.yaml`. Com todos os lotes concluídos, o EPUB é gerado com o `pandoc` (precisa estar instalado):
-
-```bash
-pandoc templates/metadata.yaml capitulos/*.md -o build/livro_completo.epub --toc --toc-depth=2
-```
-
-A triagem também define `translation_mode` (`fiel`, `traducao` ou `modernizacao`) e `figure_mode` (`hibrido` ou `recorte_total`).
 
 ---
 
-## 🛠️ Utilitários de Linha de Comando (`scripts/`)
+## 4. Guia de Uso Passo a Passo
 
-Você (ou o agente) também pode invocar os utilitários diretamente via terminal:
+### Passo 1: Provisionar a Pasta de um Novo Livro
+Mantenha o repositorio da skill limpo. Sempre provisione uma pasta exclusiva para cada obra:
+```bash
+python scripts/init_book.py --pdf "caminho/do/livro_escaneado.pdf" --dest "../pasta-do-novo-livro"
+```
+O script copia os templates, scripts, adaptadores, a logo em `assets/`, o arquivo PDF e gera o `CONTEXT.md`. Se desejar incluir capa, coloque `capa.png` ou `capa.jpg` na raiz da pasta criada.
 
-1. **Verificar/Instalar Ambiente (`setup_env.py`)**:
-   ```bash
-   python scripts/setup_env.py
-   ```
-2. **Fatiar Intervalo de Páginas do PDF em PNG (`slice_pdf.py`)**:
-   ```bash
-   python scripts/slice_pdf.py --pdf "meu_livro.pdf" --start 1 --end 15 --out build/temp_pages --dpi 180
-   ```
-3. **Recortar e Limpar Figura Manual (`crop_figure.py`)**:
-   ```bash
-   python scripts/crop_figure.py --image build/temp_pages/page_012.png --bbox 0.15,0.25,0.85,0.60 --out figuras/fig_1_1.png
-   ```
-4. **Compilar `main.tex` e Gerar Preview de Revisão (`compile_check.py`)**:
-   ```bash
-   python scripts/compile_check.py --main main.tex --outdir build --render-last 5
-   ```
+### Passo 2: Executar a Triagem e a Fase 0
+Abra a pasta do novo livro no editor e envie o comando:
+```text
+@book-resurrect @livro.pdf
+```
+O agente executara:
+1. `split_double_pages.py` para inspecionar geometria de folha dupla.
+2. Abertura da Triagem Interativa em 3 Blocos.
+3. Leitura visual do sumario e calculo de offset (`offset = pagina_pdf - pagina_livro`).
+4. Criacao de `roadmap.json` e `progress.json` com os lotes de 10 a 25 paginas.
+5. Criacao dos arquivos modulares em `capitulos/capXX.tex`.
+
+### Passo 3: Execucao dos Lotes (Fases 1 a 3)
+- **Modo Passo a Passo:** Peça ao agente *"Execute o proximo lote pendente"*. Ele transcrevera as paginas, criara as figuras TikZ ou recortes em `figuras/`, validara chaves e compilara via `compile_check.py`.
+- **Modo Autonomo (Zero-Touch):** Envie *@book-resurrect recupere este livro*. O Maestro disparara o pool de subagentes concorrentes ate esgotar a fila e consolidara o documento.
+
+### Passo 4: Revisao Editorial e Fechamento (Fase 4)
+Apos a transcricao de todos os capitulos, abra uma nova sessao de chat limpa na pasta do livro e envie:
+```text
+@book-resurrect revisar
+```
+O agente executara a auditoria de layout (resolvendo `Overfull \hbox`), catalogara divergencias historicas em `ERRATA.md` com perguntas padronizadas e compilara o PDF final.
 
 ---
 
-## 🎨 Ambientes LaTeX Disponíveis em `preambulo.tex`
+## 5. Abertura Editorial Padronizada (Página a Página)
 
-O template inclui quatro caixas semânticas baseadas em `tcolorbox` (`breakable` entre páginas) prontas para uso nos capítulos:
+Os livros compilados pelo pipeline seguem a estrutura de abertura internacional:
 
-```latex
-\begin{definicao}{ Conceito ou Nome }
-Enunciado formal da definição...
-\end{definicao}
+1. **Pagina 1 (Capa Sangrada):** Se existir `capa.png` ou `capa.jpg` na raiz, o LaTeX projeta a imagem em sangria total B5 (`\paperwidth` por `\paperheight`) via TikZ overlay sem bordas brancas.
+2. **Pagina 2 (Folha de Rosto):** Titulo da obra, autor e o selo rodapé *"Edicao Vetorial Recuperada via Book Resurrect"*, centralizados e limpos.
+3. **Pagina 3 (Verso da Folha de Rosto: Ficha Tecnica e Manifesto):** Sem numeracao de pagina (`\thispagestyle{empty}`), com a logo da fenix azul centralizada (`width=2.2cm`), manifesto de preservacao cientifica no padrao SBM/Springer, nota de acesso aberto educacional e o link oficial:
+   `https://github.com/CaioFariasOrion/book-resurrect`
+4. **Pagina 4 (Sumario):** Início imediato de `\tableofcontents` com controle de quebra de pagina para eliminar qualquer folha em branco intermediaria.
 
-\begin{teorema}{ Nome do Teorema }
-Enunciado matemático do teorema...
-\end{teorema}
+---
 
-\begin{exemplo}{ 1.1 — Aplicação Direta }
-Enunciado e passo a passo do exemplo...
-\end{exemplo}
+## 6. Utilitarios de Linha de Comando (`scripts/`)
 
-\begin{caixaformulas}{ Identidades Fundamentais }
-Resumo de fórmulas importantes do capítulo...
-\end{caixaformulas}
-```
-Além disso, estão disponíveis os ambientes `\begin{demonstracao} ... \end{demonstracao}` e `\begin{solucao} ... \end{solucao}`.
+- `setup_env.py`: verifica `pymupdf`, `Pillow`, `pypdf` e provisiona `tectonic.exe` em `./bin/`.
+- `split_double_pages.py <arquivo.pdf>`: divide folhas duplas em formato paisagem em paginas simples verticais.
+- `slice_pdf.py --pdf <arquivo.pdf> --start X --end Y --out <pasta>`: renderiza paginas em PNG (180 DPI).
+- `crop_figure.py --image <png> --bbox x0,y0,x1,y1 --out <destino.png>`: recorta e limpa figuras manuais.
+- `compile_check.py --main main.tex --outdir build`: compila com Tectonic, gera preview das ultimas paginas e despacha o PDF nomeado para a raiz.
+- `init_book.py --pdf <arquivo.pdf> --dest <pasta>`: inicializa uma pasta de livro completa e isolada.
+
+---
+
+## 7. Licenca e Proposito Educacional
+
+Este projeto e desenvolvido para fins educacionais, cientificos e de preservacao de obras historicas sob modelo de acesso aberto. Todos os direitos morais dos autores originais sao integralmente preservados.

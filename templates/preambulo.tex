@@ -255,6 +255,10 @@
     \thispagestyle{empty}%
     \vspace*{\fill}
     \begin{center}
+        \IfFileExists{assets/logo-blue.png}{%
+            \includegraphics[width=2.2cm, keepaspectratio]{assets/logo-blue.png}\par
+            \vspace{0.5em}%
+        }{}%
         {\bfseries\large Edição Vetorial Recuperada via Book Resurrect\par}
     \end{center}
     \vspace{0.8em}
