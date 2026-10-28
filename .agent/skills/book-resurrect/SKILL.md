@@ -113,7 +113,10 @@ Se `scripts/` e `templates/` já existirem, ignore esta seção.
    $$\text{offset} = \text{pagina\_pdf} - \text{pagina\_livro}$$
    *(Exemplo: se a página 1 do livro corresponde à página 9 do arquivo PDF, então `offset = 8`, logo `pagina_pdf = pagina_livro + 8`).*
 2. **Divisão em Lotes Semânticos (`batches`)**:
-   - Mapeie o livro inteiro dividindo-o em lotes baseados em **subcapítulos completos** (tipicamente de **10 a 25 páginas** por lote).
+   - Mapeie o livro inteiro dividindo-o em lotes baseados em **subcapítulos completos**.
+   - **Granularidade Dinâmica por Densidade:**
+     - *Baixa densidade (Humanas, Lógica, Ensaios):* lotes de **15 a 25 páginas**.
+     - *Alta densidade (Cálculo, Física, Geometria com múltiplos gráficos TikZ/pgfplots):* lotes curtos de **8 a 12 páginas** (um subcapítulo por lote), prevenindo sobrecarga de tokens e ciclos longos de auto-cura.
    - **Regra de Integridade**: Nenhuma seção, demonstração matemática ou lista de exercícios pode ser cortada ao meio.
    - **Separação Teoria vs. Exercícios**: Sempre separe as seções de Teoria/Exemplos das seções de Problemas Propostos / Resoluções / Gabaritos em lotes distintos (mesmo que pertençam ao mesmo arquivo `.tex` de capítulo).
    - **Fallback para livros sem Sumário**: Caso o PDF não possua sumário impresso, divida em blocos iniciais de 15 páginas e inspecione visualmente as páginas de fronteira (`slice_pdf.py`) para ajustar o início/fim de cada lote em quebras naturais de seção ou parágrafo.
@@ -127,6 +130,7 @@ Se `scripts/` e `templates/` já existirem, ignore esta seção.
      "project_mode": "exatas_latex",
      "translation_mode": "fiel",
      "figure_mode": "hibrido",
+     "max_concurrent_workers": 8,
      "total_pdf_pages": 350,
      "page_offset": 8,
      "batches": [
@@ -332,27 +336,27 @@ Aplique esta seção conforme o `translation_mode` gravado no cabeçalho de `roa
 
 ## FASE 3 — Execução Paralela e Autônoma (Pool de Subagentes & Modo Maestro)
 
-Esta fase suporta dois fluxos: execução manual (multi-chat independente) ou execução 100% autônoma (*Zero-Touch*) por meio da ferramenta nativa `invoke_subagent`, operando com esteira deslizante de concorrência controlada (3 a 4 trabalhadores simultâneos).
+Esta fase suporta dois fluxos: execução manual (multi-chat independente) ou execução 100% autônoma (*Zero-Touch*) por meio da ferramenta nativa `invoke_subagent`, operando com esteira deslizante de concorrência controlada (6 a 8 trabalhadores simultâneos, padrão: 8).
 
 ### 1. Modo Zero-Touch (Gatilho: `@book-resurrect Modo Autônomo` ou `recupere este livro`)
 > Ao receber `@book-resurrect recupere este livro` em uma pasta com apenas um arquivo PDF:
 > 1. Executa auto-scaffolding se necessário.
 > 2. Roda a verificação de folha dupla via `split_double_pages.py`.
 > 3. Gera `roadmap.json` e `progress.json`.
-> 4. Dispara o Worker Pool reativo com até 3 subagentes concorrentes via `invoke_subagent`.
+> 4. Dispara o Worker Pool reativo com até 8 subagentes concorrentes via `invoke_subagent`.
 > 5. Ao término da fila, compila o `main.pdf` via Modo Maestro.
 
 Ao ser acionado para processamento ponta a ponta sem intervenção humana:
 1. **Inspeção de Fila:** O Maestro lê `roadmap.json` e `progress.json` e identifica todos os lotes com status `"pending"`.
-2. **Inicialização do Pool (Concorrência Máxima = 3 a 4):**
-   - Dispara simultaneamente no mesmo turno até 3 chamadas assíncronas da ferramenta `invoke_subagent` para os primeiros lotes pendentes:
+2. **Inicialização do Pool (Concorrência Máxima = 8):**
+   - Dispara simultaneamente no mesmo turno até 8 chamadas assíncronas da ferramenta `invoke_subagent` para os primeiros lotes pendentes:
      `invoke_subagent("Operário: <ID_DO_LOTE> (Páginas X a Y -> capitulos/<nome_unico>.tex)")`
    - O Maestro encerra o turno sem chamar novas ferramentas, aguardando o despertar reativo (*Reactive Wakeup*).
 3. **Mecanismo de Despertar Reativo (Worker Pool):**
    - Ao receber o callback de término de qualquer subagente:
      a) Atualiza o status do lote concluído para `"completed"` em `progress.json`.
      b) Inspeciona `progress.json` em busca do próximo lote com status `"pending"`.
-     c) Se houver lote pendente, despacha imediatamente um novo `invoke_subagent` para manter o pool estável em 3 trabalhadores ativos.
+     c) Se houver lote pendente, despacha imediatamente um novo `invoke_subagent` para manter o pool estável em 8 trabalhadores ativos.
      d) Encerra o turno e aguarda o próximo evento de retorno.
 4. **Encerramento e Consolidação:**
    - Quando não restarem lotes `"pending"` e todos os subagentes ativos finalizarem, o Maestro aciona automaticamente o **Modo Maestro: Consolidar** (Item 3).
@@ -361,6 +365,7 @@ Ao ser acionado para processamento ponta a ponta sem intervenção humana:
 - **Escopo de Escrita Isolado:** Escrever exclusivamente no arquivo `.tex` do lote designado (`capitulos/<nome_unico>.tex`).
 - **Isolamento Gráfico:** Utilizar prefixo exclusivo por lote em figuras recortadas (`figuras/<lote>_fig_Y.png`) ou construir ilustrações diretamente em TikZ vetorial no corpo do arquivo `.tex`.
 - **Fatiamento Restrito:** Executar `slice_pdf.py` estritamente para o intervalo de páginas (`--start` e `--end`) do seu lote.
+- **Isolamento de Compilação Local:** Se o operário executar validação de auto-cura com `compile_check.py`, deve utilizar obrigatoriamente a subpasta isolada do seu lote (`--outdir build/<batch_id>`), evitando colisões de escrita ou bloqueio de arquivos no Windows.
 - **Diretrizes Tipográficas Obrigatórias:**
   - **PROIBIDO** o uso de `tabular` para diagramação de listas de exercícios (obrigatório o uso de `tasks` ou `multicol` + `enumerate`).
   - **PROIBIDO** englobar múltiplos exemplos, tabelas ou gráficos TikZ dentro de caixas fechadas `tcolorbox`. Exemplos devem ser sempre texto corrido com `\begin{exemplo}`.

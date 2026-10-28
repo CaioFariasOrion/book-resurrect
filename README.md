@@ -34,7 +34,7 @@ O conhecimento humano acumulado ao longo dos séculos com frequência fica retid
   1. *Camada 1 (Auto-Cura de Layout):* Varre `build/main.log`, localiza transbordamentos de margem (`Overfull \hbox`), reconfigura tabelas e insere respiro opaco (`fill=white, inner sep=1.5pt`) em rótulos de gráficos TikZ.
   2. *Camada 2 (Errata Humana-no-Loop):* Proíbe a IA de alterar raciocínios matemáticos ou o texto do autor silenciosamente. Divergências são catalogadas em `ERRATA.md` com escolhas padronizadas (`[M] Manter`, `[C] Corrigir no texto`, `[N] Nota de Rodapé`).
   3. *Camada 3 (Empacotamento):* Insere a capa sangrada na Página 1, Folha de Rosto na Página 2, Ficha Técnica/Manifesto institucional com a logo da fênix na Página 3, Sumário na Página 4 e copia o PDF final para `./<Titulo>_<Autor>.pdf`.
-- **Modo Autônomo Zero-Touch (Fase 3):** Suporta esteira paralela com pool de até 3 subagentes concorrentes operando em arquivos `.tex` isolados, com consolidação pelo Modo Maestro.
+- **Modo Autônomo Zero-Touch (Fase 3):** Suporta esteira paralela com pool de até 8 subagentes concorrentes operando em arquivos `.tex` isolados, granularidade dinâmica para livros densos (8 a 12 páginas) e pastas de compilação isoladas por lote, com consolidação pelo Modo Maestro.
 
 ---
 
