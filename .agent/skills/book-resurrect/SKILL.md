@@ -288,8 +288,15 @@ Nenhum lote pode ser considerado concluído sem compilação limpa e verificaç�
 Aplique esta seção conforme o `translation_mode` gravado no cabeçalho de `roadmap.json`. Em `"fiel"`, nada daqui se aplica e vale a seção 2.1. Em `"traducao"` e `"modernizacao"`, a regra de ouro abaixo vale sem exceção.
 
 1. **Inviolabilidade Notacional (Regra de Ouro)**:
-   - Toda a álgebra, operadores, limites, variáveis ($x$, $y$, $z$, $\alpha$), funções matemáticas e índices originais devem permanecer **estritamente intocados**. Nada de renomear variável, trocar símbolo ou reescrever expressão para "ficar mais natural" no idioma de destino.
-   - A tradução e a modernização atuam só na prosa ao redor das fórmulas, nunca dentro dos ambientes matemáticos.
+   - Toda a álgebra, limites, variáveis ($x$, $y$, $z$, $\alpha$), expoentes e índices originais devem permanecer **estritamente intocados**. É proibido renomear variáveis, trocar letras gregas ou alterar expressões matemáticas para simplificar o texto.
+   - A tradução atua primariamente na prosa ao redor das fórmulas.
+   - **Camada de Compatibilidade de Operadores (Preâmbulo):** Para resolver divergências notacionais entre tradições matemáticas internacionais (como as escolas russa, francesa e alemã), o `preambulo.tex` define comandos padronizados:
+     - Hiperbólicas e inversas: `\sh` para `\sinh`, `\ch` para `\cosh`, `\th` para `\tanh`, `\cth` para `\coth`, `\arsh`, `\arch`, etc.
+     - Trigonométricas: `\sen`, `\tg`, `\cotg`, `\cosec`, `\arctg`.
+     - Aritmética e Teoria dos Números: `\pgcd`, `\ppcm`, `\ggT`, `\kgV`, `\lcm` mapeados para `\mdc` e `\mmc`.
+     - Álgebra linear: `\Sp` para `\tr` (traço), `\rang` e `\rg` para `\posto`.
+     - Vírgula decimal: pacote `icomma` ativado para evitar espaçamento indevido em números como `$3,14$`.
+   - **Exceção para Caracteres Não-Latinos (Cirílico e Árabe):** Comandos TeX não aceitam caracteres cirílicos no nome. Quando o original contiver siglas cirílicas dentro de equações (como $\text{НОД}$ para MDC ou $\text{НОК}$ para MMC), o agente deve substituí-las no código TeX pelos comandos canônicos `\mdc` e `\mmc`.
 2. **Tradução Conceitual** (`translation_mode: "traducao"`, sob `<translation_syntax_lock>`):
    <translation_syntax_lock>
    - Traduza os termos estruturais e pedagógicos para o idioma de destino registrado em `target_language`. Exemplos para ES para PT-BR: *Demostración* → *Demonstração*, *Ejemplo* → *Exemplo*, *Corolario* → *Corolário*.

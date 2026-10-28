@@ -33,6 +33,52 @@
 \usepackage{bm}
 \usepackage{cancel}
 
+% --- Operadores Matematicos e Compatibilidade Internacional (ISO/ABNT) ---
+\usepackage{icomma}
+
+% Trigonometria e Inversas (Brasil e Internacional)
+\providecommand{\sen}{\operatorname{sen}}
+\providecommand{\tg}{\operatorname{tg}}
+\providecommand{\cotg}{\operatorname{cotg}}
+\providecommand{\ctg}{\operatorname{cotg}}
+\providecommand{\cossec}{\operatorname{cossec}}
+\providecommand{\cosec}{\operatorname{cossec}}
+\providecommand{\arctg}{\operatorname{arctg}}
+\providecommand{\arcctg}{\operatorname{arcctg}}
+
+% Funcoes Hiperbolicas (Escolas Russa e Francesa mapeadas para o padrao internacional)
+\providecommand{\sh}{\sinh}
+\providecommand{\ch}{\cosh}
+\makeatletter
+\DeclareRobustCommand{\th}{\relax\ifmmode\tanh\else\symbol{254}\fi}
+\makeatother
+\providecommand{\cth}{\coth}
+\providecommand{\arsh}{\operatorname{arsinh}}
+\providecommand{\arch}{\operatorname{arcosh}}
+\providecommand{\arth}{\operatorname{artanh}}
+\providecommand{\arcth}{\operatorname{arcoth}}
+
+% Teoria dos Numeros e Aritmetica Multilingue (MDC e MMC)
+\providecommand{\mdc}{\operatorname{mdc}}
+\providecommand{\mmc}{\operatorname{mmc}}
+\providecommand{\pgcd}{\operatorname{mdc}}
+\providecommand{\ppcm}{\operatorname{mmc}}
+\providecommand{\ggT}{\operatorname{mdc}}
+\providecommand{\kgV}{\operatorname{mmc}}
+\providecommand{\lcm}{\operatorname{mmc}}
+
+% Algebra Linear, Analise Vetorial e Estatistica
+\providecommand{\tr}{\operatorname{tr}}
+\providecommand{\Sp}{\operatorname{tr}}
+\providecommand{\posto}{\operatorname{posto}}
+\providecommand{\rang}{\operatorname{posto}}
+\providecommand{\rg}{\operatorname{posto}}
+\providecommand{\rot}{\operatorname{rot}}
+\providecommand{\Nuc}{\operatorname{Nuc}}
+\providecommand{\Var}{\operatorname{Var}}
+\providecommand{\Cov}{\operatorname{Cov}}
+\providecommand{\Esp}{\operatorname{E}}
+
 % --- Tabelas, Listas em Colunas e Figuras ---
 \usepackage{booktabs}
 \usepackage{array}
