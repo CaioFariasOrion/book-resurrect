@@ -314,23 +314,40 @@ Aplique esta seção conforme o `translation_mode` gravado no cabeçalho de `roa
 
 ---
 
-## FASE 3 — Modo Esquadrão Paralelo (Multi-Chat no Antigravity)
+## FASE 3 — Execução Paralela e Autônoma (Pool de Subagentes & Modo Maestro)
 
-Esta fase habilita o processamento simultâneo de múltiplos capítulos ou lotes em conversas paralelas sobre o mesmo diretório de livro, separando os agentes de transcrição (**Modo Operário**) do agente integrador (**Modo Maestro**).
+Esta fase suporta dois fluxos: execução manual (multi-chat independente) ou execução 100% autônoma (*Zero-Touch*) por meio da ferramenta nativa `invoke_subagent`, operando com esteira deslizante de concorrência controlada (3 a 4 trabalhadores simultâneos).
 
-### 1. Modo Operário (Gatilho: `Operário: <alvo>`)
-- **Escopo de Escrita Isolado:** Escrever exclusivamente no arquivo designado do capítulo ou lote (`capitulos/<nome_unico>.tex` ou `.md`). Caso utilize `crop_figure.py`, nomear as figuras com prefixo exclusivo do capítulo (`figuras/capXX_fig_Y.png`) para evitar sobrescrita entre agentes.
-- **Fatiamento Restrito:** Executar `slice_pdf.py` apenas para o intervalo exato de páginas (`--start` e `--end`) correspondente ao seu lote.
-- **Bloqueio de Concorrência (Regra Inviolável):** Enquanto estiver em Modo Operário, é estritamente proibido:
-  1. Ler ou editar `main.tex`.
-  2. Editar `roadmap.json`, `progress.json` ou `CONTEXT.md`.
-  3. Executar `pdflatex`, `tectonic` ou `compile_check.py` sobre `main.tex` (evitando lock nos arquivos `.aux`, `.log` e `.toc`).
-- **Validação de Fechamento do Operário:** Executar verificação sintática local no arquivo `capitulos/<nome_unico>.tex` garantindo:
-  1. Equilíbrio exato de chaves `{}`.
-  2. Fechamento correspondente de todos os blocos `\begin{...}` e `\end{...}`.
+### 1. Modo Zero-Touch (Gatilho: `@book-resurrect Modo Autônomo` ou `recupere este livro`)
+Ao ser acionado para processamento ponta a ponta sem intervenção humana:
+1. **Inspeção de Fila:** O Maestro lê `roadmap.json` e `progress.json` e identifica todos os lotes com status `"pending"`.
+2. **Inicialização do Pool (Concorrência Máxima = 3 a 4):**
+   - Dispara simultaneamente no mesmo turno até 3 chamadas assíncronas da ferramenta `invoke_subagent` para os primeiros lotes pendentes:
+     `invoke_subagent("Operário: <ID_DO_LOTE> (Páginas X a Y -> capitulos/<nome_unico>.tex)")`
+   - O Maestro encerra o turno sem chamar novas ferramentas, aguardando o despertar reativo (*Reactive Wakeup*).
+3. **Mecanismo de Despertar Reativo (Worker Pool):**
+   - Ao receber o callback de término de qualquer subagente:
+     a) Atualiza o status do lote concluído para `"completed"` em `progress.json`.
+     b) Inspeciona `progress.json` em busca do próximo lote com status `"pending"`.
+     c) Se houver lote pendente, despacha imediatamente um novo `invoke_subagent` para manter o pool estável em 3 trabalhadores ativos.
+     d) Encerra o turno e aguarda o próximo evento de retorno.
+4. **Encerramento e Consolidação:**
+   - Quando não restarem lotes `"pending"` e todos os subagentes ativos finalizarem, o Maestro aciona automaticamente o **Modo Maestro: Consolidar** (Item 3).
 
-### 2. Modo Maestro (Gatilho: `Maestro: Consolidar`)
-- **Pré-condição:** Acionado após a conclusão dos lotes pelos Operários.
-- **Integração:** Inspecionar `capitulos/`, ordenar os arquivos gerados e inserir as diretivas `\include{capitulos/...}` em `main.tex`.
-- **Compilação e Correção:** Executar `python scripts/compile_check.py` (ou `pdflatex` em duas passadas) até obter `exit code 0`, corrigindo eventuais erros de sintaxe residual ou referências cruzadas nos capítulos.
-- **Governança:** Atualizar `progress.json` e `CONTEXT.md` registrando os capítulos consolidados.
+### 2. Modo Operário (Executado por Subagente ou Chat Independente)
+- **Escopo de Escrita Isolado:** Escrever exclusivamente no arquivo `.tex` do lote designado (`capitulos/<nome_unico>.tex`).
+- **Isolamento Gráfico:** Utilizar prefixo exclusivo por lote em figuras recortadas (`figuras/<lote>_fig_Y.png`) ou construir ilustrações diretamente em TikZ vetorial no corpo do arquivo `.tex`.
+- **Fatiamento Restrito:** Executar `slice_pdf.py` estritamente para o intervalo de páginas (`--start` e `--end`) do seu lote.
+- **Bloqueio de Concorrência (Inviolável):**
+  - PROIBIDO ler, abrir ou editar `main.tex`.
+  - PROIBIDO modificar `roadmap.json`, `progress.json` ou `CONTEXT.md`.
+  - PROIBIDO executar `pdflatex`, `tectonic` ou `compile_check.py` sobre `main.tex`.
+- **Validação Sintática Local:** Validar antes do encerramento o balanceamento exato de chaves `{}` e o fechamento correspondente de todos os blocos `\begin{...}` e `\end{...}` em `capitulos/<nome_unico>.tex`.
+- **Sinal de Conclusão:** Finalizar o turno emitindo exatamente: `"LOTE <ID> concluído com sucesso em capitulos/<nome_unico>.tex."` para disparar o Reactive Wakeup do Maestro.
+
+### 3. Modo Maestro (Gatilho: `Maestro: Consolidar` ou Automático ao fim do Zero-Touch)
+- **Integração:** Inspecionar `capitulos/`, ordenar os arquivos gerados e injetar as diretivas `\include{capitulos/...}` no `main.tex`.
+- **Compilação e Auto-Cura:**
+  - Executar `python scripts/compile_check.py` (duas passadas de `pdflatex`).
+  - Em caso de erro de sintaxe residual, isolar a linha indicada no log, corrigir diretamente no arquivo `.tex` do capítulo afetado e recompilar até obter `Exit Code: 0`.
+- **Governança:** Atualizar `progress.json` e registrar a consolidação final no `CONTEXT.md`.
