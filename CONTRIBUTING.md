@@ -1,35 +1,35 @@
-# Guia de Contribuicao: book-resurrect
+# Guia de Contribuição: book-resurrect
 
-Agradecemos o interesse em contribuir com o framework **book-resurrect**. Este documento estabelece as diretrizes de desenvolvimento, arquitetura editorial e integridade etica para colaboracoes tecnicas e restauracoes de obras.
-
----
-
-## 1. Principios Fundamentais do Projeto
-
-1. **Fidelidade Editorial Estrita:** Toda transcricao deve ser integral (100%), incluindo demonstracoes, observacoes, notas de rodape e todas as alternativas de exercicios. E terminantemente proibido resumir paragrafos ou omitir demonstracoes.
-2. **Inviolabilidade Notacional:** Toda algebra, limites, variaveis, funcoes matematicas e indices originais devem permanecer estritamente intocados. Nada de renomear variaveis ou alterar a notacao para "ficar mais moderna".
-3. **Trava Etica de Errata:** Contribuidores e agentes sao proibidos de alterar deduces matematicas ou gralhas historicas silenciosamente. Qualquer divergencia contra o scan original deve ser documentada em `ERRATA.md`.
+Agradecemos o interesse em contribuir com o framework **book-resurrect**. Este documento estabelece as diretrizes de desenvolvimento, arquitetura editorial e integridade ética para colaborações técnicas e restaurações de obras.
 
 ---
 
-## 2. Estrutura Modular dos Capitulos
+## 1. Princípios Fundamentais do Projeto
 
-Os arquivos de conteudo sao armazenados na pasta `capitulos/` e carregados via `\include{...}` pelo arquivo mestre `main.tex`:
+1. **Fidelidade Editorial Estrita:** Toda transcrição deve ser integral (100%), incluindo demonstrações, observações, notas de rodapé e todas as alternativas de exercícios. É terminantemente proibido resumir parágrafos ou omitir demonstrações.
+2. **Inviolabilidade Notacional:** Toda álgebra, limites, variáveis, funções matemáticas e índices originais devem permanecer estritamente intocados. Nada de renomear variáveis ou alterar a notação para "ficar mais moderna".
+3. **Trava Ética de Errata:** Contribuidores e agentes são proibidos de alterar deduções matemáticas ou gralhas históricas silenciosamente. Qualquer divergência contra o scan original deve ser documentada em `ERRATA.md`.
 
-- **Proibicao de Preambulos Internos:** Arquivos `capitulos/capXX.tex` nunca devem conter `\documentclass`, `\usepackage`, `\begin{document}` ou `\end{document}`.
+---
+
+## 2. Estrutura Modular dos Capítulos
+
+Os arquivos de conteúdo são armazenados na pasta `capitulos/` e carregados via `\include{...}` pelo arquivo mestre `main.tex`:
+
+- **Proibição de Preâmbulos Internos:** Arquivos `capitulos/capXX.tex` nunca devem conter `\documentclass`, `\usepackage`, `\begin{document}` ou `\end{document}`.
 - **Hierarquia:**
-  - O primeiro lote de um capitulo deve iniciar com `\chapter{Titulo do Capitulo}`.
-  - Subcapitulos seguintes no mesmo arquivo utilizam `\section{...}` e `\subsection{...}`.
-- **Modo Markdown (Dual-Engine):** No modo `humanas_markdown`, os capitulos sao salvos como `capitulos/capXX.md`, utilizando `# Capitulo`, `## Secao` e notas de rodape no padrao `[^1]`.
+  - O primeiro lote de um capítulo deve iniciar com `\chapter{Título do Capítulo}`.
+  - Subcapítulos seguintes no mesmo arquivo utilizam `\section{...}` e `\subsection{...}`.
+- **Modo Markdown (Dual-Engine):** No modo `humanas_markdown`, os capítulos são salvos como `capitulos/capXX.md`, utilizando `# Capítulo`, `## Seção` e notas de rodapé no padrão `[^1]`.
 
 ---
 
-## 3. Diretrizes Tipograficas Obrigatorias (Design System SBM/Springer)
+## 3. Diretrizes Tipográficas Obrigatórias (Design System SBM/Springer)
 
-Para assegurar qualidade grafica uniforme, respeite rigorosamente as seguintes convencoes:
+Para assegurar qualidade gráfica uniforme, respeite rigorosamente as seguintes convenções:
 
-### Listas de Exercicios e Letras
-- **PROIBIDO** o uso de ambientes `tabular` para diagramar listas de exercicios.
+### Listas de Exercícios e Letras
+- **PROIBIDO** o uso de ambientes `tabular` para diagramar listas de exercícios.
 - Utilize exclusivamente o pacote `tasks` (configurado no `preambulo.tex`) ou `multicol` com `enumerate`:
   ```latex
   \begin{tasks}(2)
@@ -38,56 +38,56 @@ Para assegurar qualidade grafica uniforme, respeite rigorosamente as seguintes c
   \end{tasks}
   ```
 
-### Caixas Semanticas (`tcolorbox`)
+### Caixas Semânticas (`tcolorbox`)
 - Utilize caixas minimalistas com barra lateral de 2.5pt definidas em `preambulo.tex`:
   - `\begin{definicao}{Conceito} ... \end{definicao}` (Azul Cobalto)
   - `\begin{teorema}{Nome} ... \end{teorema}` (Rubi / Vinho)
   - `\begin{proposicao}{Nome} ... \end{proposicao}`
   - `\begin{lema}{Nome} ... \end{lema}`
-  - `\begin{caixaformulas}{Titulo} ... \end{caixaformulas}`
-- **PROIBIDO** englobar multiplos exemplos, tabelas extensas ou graficos TikZ dentro de caixas `tcolorbox`.
+  - `\begin{caixaformulas}{Título} ... \end{caixaformulas}`
+- **PROIBIDO** englobar múltiplos exemplos, tabelas extensas ou gráficos TikZ dentro de caixas `tcolorbox`.
 
-### Exemplos e Resoluces
-- Exemplos devem ser sempre formatados em texto corrido atraves do ambiente `\begin{exemplo}{Titulo}`:
+### Exemplos e Resoluções
+- Exemplos devem ser sempre formatados em texto corrido através do ambiente `\begin{exemplo}{Título}`:
   ```latex
-  \begin{exemplo}{Calculo do Limite}
+  \begin{exemplo}{Cálculo do Limite}
   Enunciado detalhado do problema...
   \end{exemplo}
   \begin{solucao}
-  Passo a passo da resolucao com delimitador de encerramento automatico.
+  Passo a passo da resolução com delimitador de encerramento automático.
   \end{solucao}
   ```
 
-### Tabelas Matematicas
-- Tabelas matematicas e tabelas-verdade devem usar o estilo respiravel `booktabs` (`\toprule`, `\midrule`, `\bottomrule`), evitando grades completas claustrofobicas em todas as celulas.
+### Tabelas Matemáticas
+- Tabelas matemáticas e tabelas-verdade devem usar o estilo respirável `booktabs` (`\toprule`, `\midrule`, `\bottomrule`), evitando grades completas claustrofóbicas em todas as células.
 
-### Graficos e Figuras
-- Graficos cartesianos, funcoes 2D/3D e diagramas geometricos devem ser reconstruidos nativamente em codigo vetorial **TikZ** ou **pgfplots**.
-- Em rotulos sobre curvas ou retas, utilize sempre `fill=white, inner sep=1.5pt` no no do TikZ para evitar colisoes visuais.
-- Fotos e ilustracoes manuais que nao podem ser vetorizadas devem ser tratadas via `scripts/crop_figure.py` e salvas em `figuras/`.
+### Gráficos e Figuras
+- Gráficos cartesianos, funções 2D/3D e diagramas geométricos devem ser reconstruídos nativamente em código vetorial **TikZ** ou **pgfplots**.
+- Em rótulos sobre curvas ou retas, utilize sempre `fill=white, inner sep=1.5pt` no nó do TikZ para evitar colisões visuais.
+- Fotos e ilustrações manuais que não podem ser vetorizadas devem ser tratadas via `scripts/crop_figure.py` e salvas em `figuras/`.
 
 ---
 
-## 4. Gestao de Errata Humana-no-Loop (`ERRATA.md`)
+## 4. Gestão de Errata Humana-no-Loop (`ERRATA.md`)
 
-Quando encontrar uma inconsistencia no livro original escaneado (erro aritmetico, gralha de impressao ou salto logico):
+Quando encontrar uma inconsistência no livro original escaneado (erro aritmético, gralha de impressão ou salto lógico):
 
 1. Registre o caso em `ERRATA.md` informando:
-   - Capitulo e pagina fisica do scan original.
+   - Capítulo e página física do scan original.
    - Trecho exato no livro original.
-   - Divergencia identificada e proposta de correcao.
-2. Adote uma das tres posturas padronizadas:
-   - `[M] Manter`: mantem a versao historica original intacta.
-   - `[C] Corrigir no texto`: aplica a correcao diretamente no arquivo `.tex`.
-   - `[N] Nota de Rodape`: preserva o texto original no corpo da pagina e insere `\footnote{Nota de revisao: ...}`.
+   - Divergência identificada e proposta de correção.
+2. Adote uma das três posturas padronizadas:
+   - `[M] Manter`: mantém a versão histórica original intacta.
+   - `[C] Corrigir no texto`: aplica a correção diretamente no arquivo `.tex`.
+   - `[N] Nota de Rodapé`: preserva o texto original no corpo da página e insere `\footnote{Nota de revisão: ...}`.
 
 ---
 
-## 5. Ambiente de Desenvolvimento e Verificacao
+## 5. Ambiente de Desenvolvimento e Verificação
 
-Antes de submeter alteracoes nos scripts ou templates:
+Antes de submeter alterações nos scripts ou templates:
 
-1. Instale as dependencias oficiais:
+1. Instale as dependências oficiais:
    ```bash
    pip install -r requirements.txt
    ```
@@ -95,7 +95,7 @@ Antes de submeter alteracoes nos scripts ou templates:
    ```bash
    python scripts/setup_env.py
    ```
-3. Teste a compilacao do template com o Tectonic:
+3. Teste a compilação do template com o Tectonic:
    ```bash
    python scripts/compile_check.py --main templates/main.tex --outdir build
    ```
@@ -106,19 +106,19 @@ Antes de submeter alteracoes nos scripts ou templates:
 
 ---
 
-## 6. Padrao de Commits
+## 6. Padrão de Commits
 
-Seguimos a convencao **Conventional Commits** para manter o historico limpo e rastreavel:
+Seguimos a convenção **Conventional Commits** para manter o histórico limpo e rastreável:
 
-- `feat:` novas funcionalidades ou adicoes na skill/scripts.
-- `fix:` correcoes de bugs em scripts ou templates.
-- `docs:` melhorias ou criacao de documentacao.
-- `refactor:` alteracoes estruturais de codigo sem mudanca de comportamento.
-- `style:` ajustes tipograficos ou de formatacao sem alteracao funcional.
+- `feat:` novas funcionalidades ou adições na skill/scripts.
+- `fix:` correções de bugs em scripts ou templates.
+- `docs:` melhorias ou criação de documentação.
+- `refactor:` alterações estruturais de código sem mudança de comportamento.
+- `style:` ajustes tipográficos ou de formatação sem alteração funcional.
 
 Exemplo de mensagem:
 ```text
-feat: adicionar suporte a divisao de folhas duplas no setup
+feat: adicionar suporte a divisão de folhas duplas no setup
 ```
 
-Nao adicione trailers ou assinaturas de ferramentas automatizadas nas mensagens de commit.
+Não adicione trailers ou assinaturas de ferramentas automatizadas nas mensagens de commit.
