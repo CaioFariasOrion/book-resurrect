@@ -1,12 +1,27 @@
-# book-resurrect: Pipeline Editorial de Recuperação de Livros para LaTeX e Markdown
+# book-resurrect: Pipeline Editorial de Recuperação e Tradução de Livros
 
-O **book-resurrect** é um framework editorial e skill universal para agentes de inteligência artificial (Antigravity, Cursor, Claude Code, Windsurf e GitHub Copilot). Seu objetivo é converter livros escaneados em PDF (mesmo com baixa qualidade, manchas de scanner ou notação matemática densa) em projetos modulares, vetoriais e compiláveis.
+O **book-resurrect** é um framework editorial e skill universal para agentes de inteligência artificial (Antigravity, Cursor, Claude Code, Windsurf e GitHub Copilot). Seu propósito vai além da digitalização convencional: ele foi concebido para derrubar as barreiras de tempo, idioma e degradação física que mantêm o conhecimento científico e cultural isolado em páginas impressas.
 
-Na versão **v2.1**, o ecossistema consolida o Design System acadêmico no formato editorial B5 (baseado nos padrões da SBM e Springer), provisionamento isolado por obra, revisão editorial desacoplada com trava ética em `ERRATA.md` e empacotamento com injeção automática de capa e despacho semântico para a raiz.
+Independente da época em que a obra foi concebida, do nível de desgaste do papel, de manchas de digitalização ou da complexidade do conteúdo, o pipeline é capaz de recuperar, modernizar e verter livros legados para qualquer idioma contemporâneo. O resultado é entregue em formatos digitais abertos e sustentáveis, compiláveis diretamente em PDF no padrão tipográfico acadêmico B5 (baseado nas diretrizes da SBM e Springer) ou em Markdown semântico para leitura em dispositivos modernos e leitores de EPUB.
+
+Na versão **v2.1**, o ecossistema consolida triagem em três blocos, esteira paralela com pool de subagentes concorrentes, revisão editorial desacoplada com auditoria ética em `ERRATA.md` e empacotamento com abertura editorial padronizada e despacho automático para a raiz.
 
 ---
 
-## 1. Destaques da Arquitetura v2.1
+## 1. Transposição Universal de Conhecimento
+
+O conhecimento humano acumulado ao longo dos séculos com frequência fica retido em edições esgotadas, cópias físicas degradadas ou restrito ao idioma de sua publicação original. O pipeline editorial do **book-resurrect** dissolve essas limitações por meio de três modalidades estruturadas de transposição:
+
+- **Transcrição Fiel (1:1):** Direcionada à salvaguarda patrimonial e edições de referência crítica. O texto, a pontuação, o desenvolvimento do raciocínio e o estilo original são transcritos com fidelidade absoluta, transpondo imagens rasterizadas em código tipográfico puro e gráficos vetoriais paramétricos.
+- **Modernização Lexical e Ortográfica:** Voltada para obras históricas cujo acesso didático é dificultado por normas ortográficas arcaicas ou grafias pré-reforma (como arcaísmos do português dos séculos XIX e XX). O motor atualiza o vocabulário e a ortografia para a norma culta contemporânea sob regras explícitas, preservando rigorosamente o estilo formal, a voz original e a cadência do autor.
+- **Tradução Técnica Universal:** Permite transpor tratados e manuais técnicos de qualquer idioma original (como árabe, russo, alemão, francês, latim ou inglês) diretamente para o português contemporâneo ou qualquer outro idioma de destino. O processo segue o princípio da **Inviolabilidade Notacional**: toda a álgebra, matrizes, operadores lógicos, variáveis e limites matemáticos permanecem 100% intocados sob trava sintática (`<translation_syntax_lock>`), traduzindo apenas a prosa didática e os conceitos estruturais ao redor das equações.
+- **Independência de Formato (Dual-Engine):** O pipeline aceita qualquer material escaneado e direciona a obra para o motor ideal:
+  1. *Exatas (LaTeX e TikZ):* Gera código TeX modular em B5, reconstruindo diagramas geométricos e gráficos de funções como vetores nativos.
+  2. *Humanas (Markdown e EPUB):* Gera arquivos `.md` semânticos com notas de rodapé padronizadas e metadados estruturados, prontos para compilação em EPUB e PDF via Pandoc.
+
+---
+
+## 2. Destaques da Arquitetura v2.1
 
 - **Visão Multimodal Fatiada:** Não utiliza extratores de texto bruto quebrados (como pypdf ou pdfminer). O agente fatia o PDF em PNGs de 180 DPI por lote via `slice_pdf.py` e realiza a leitura visual direta.
 - **Detecção e Divisão de Folha Dupla:** Identifica escaneamentos abertos em folha dupla (booklet) via `split_double_pages.py`, fatiando-os verticalmente em páginas simples ordenadas.
@@ -23,7 +38,7 @@ Na versão **v2.1**, o ecossistema consolida o Design System acadêmico no forma
 
 ---
 
-## 2. Estrutura do Repositório
+## 3. Estrutura do Repositório
 
 ```text
 .
@@ -55,7 +70,7 @@ Na versão **v2.1**, o ecossistema consolida o Design System acadêmico no forma
 
 ---
 
-## 3. Instalação e Requisitos
+## 4. Instalação e Requisitos
 
 ### Requisitos do Sistema
 - Python 3.10 ou superior.
@@ -86,7 +101,7 @@ New-Item -ItemType Junction -Force -Path "$env:USERPROFILE\.gemini\book-resurrec
 
 ---
 
-## 4. Guia de Uso Passo a Passo
+## 5. Guia de Uso Passo a Passo
 
 ### Passo 1: Provisionar a Pasta de um Novo Livro
 Mantenha o repositório da skill limpo. Sempre provisione uma pasta exclusiva para cada obra:
@@ -120,7 +135,7 @@ O agente executará a auditoria de layout (resolvendo `Overfull \hbox`), catalog
 
 ---
 
-## 5. Abertura Editorial Padronizada (Página a Página)
+## 6. Abertura Editorial Padronizada (Página a Página)
 
 Os livros compilados pelo pipeline seguem a estrutura de abertura internacional:
 
@@ -132,7 +147,7 @@ Os livros compilados pelo pipeline seguem a estrutura de abertura internacional:
 
 ---
 
-## 6. Utilitários de Linha de Comando (`scripts/`)
+## 7. Utilitários de Linha de Comando (`scripts/`)
 
 - `setup_env.py`: verifica `pymupdf`, `Pillow`, `pypdf` e provisiona `tectonic.exe` em `./bin/`.
 - `split_double_pages.py <arquivo.pdf>`: divide folhas duplas em formato paisagem em páginas simples verticais.
@@ -143,6 +158,6 @@ Os livros compilados pelo pipeline seguem a estrutura de abertura internacional:
 
 ---
 
-## 7. Licença e Propósito Educacional
+## 8. Licença e Propósito Educacional
 
 Este projeto é desenvolvido para fins educacionais, científicos e de preservação de obras históricas sob modelo de acesso aberto. Todos os direitos morais dos autores originais são integralmente preservados.
