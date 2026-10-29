@@ -3,6 +3,8 @@ build/
 bin/
 temp_pages/
 compiled_preview/
+*.pdf
+
 
 # Cache Python e ambientes virtuais
 __pycache__/
