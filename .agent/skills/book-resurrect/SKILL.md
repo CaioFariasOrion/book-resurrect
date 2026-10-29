@@ -406,15 +406,15 @@ Estágio independente acionado sob demanda após a compilação do `main.pdf`. O
    - Converte automaticamente blocos avulsos `\begin{center} ... \refstepcounter{figure}` para ambientes canônicos `\begin{figure}[htbp] ... \caption{...} \label{...} \end{figure}`.
    - Higieniza e padroniza réguas manuais `\hrule` duplicadas ou com `\vspace` soltos para a macro semântica protegida `\divisorexemplo`.
 
-### Estágio 4.2: Auditoria Visual, Auto-Cura Geométrica e Galeria de Revisão
-1. **Execução Mandatória do Script de Auto-Cura:**
+### Estágio 4.2: Auditoria Visual, Desobstrução Geométrica e Galeria de Revisão
+1. **Execução Mandatória do Script de Auditoria e Saneamento:**
    Execute o script canônico de varredura e desobstrução geométrica:
    ```bash
    python scripts/audit_and_fix_tikz.py --capitulos capitulos/ --pdf build/main.pdf --review-dir build/figures_review --dpi 250
    ```
-2. **Mapeamento e Regras de Auto-Cura de TikZ:**
-   - **Regra do Fundo Protetor:** Aplica compulsoriamente `fill=white, inner sep=1.2pt` em nós (`node`) de texto, cotas e fórmulas para impedir que linhas e curvas atravessem caracteres.
-   - **Desobstrução de Nós Críticos:** Ajusta âncoras cegas em coordenadas concorrentes (afastamento ortogonal em retas secantes e tangentes, orientação externa de raios $R$ em setores polares, hierarquia vertical de cotas nos eixos cartesianos).
+2. **Mapeamento e Regras de Saneamento de TikZ:**
+   - **Transparência Vetorial Natural:** PROIBIDO o uso de caixas brancas opacas (`fill=white`) sobre gráficos, eixos, curvas ou áreas coloridas preenchidas. O design deve manter o fundo transparente editorial.
+   - **Desobstrução por Coordenadas e Âncoras:** Ajusta coordenadas livres e âncoras direcionais (`above`, `below`, `left`, `right` com folga de 3pt a 5pt) em nós concorrentes (afastamento ortogonal em retas secantes e tangentes, orientação externa de raios $R$ em setores polares, hierarquia vertical de cotas nos eixos cartesianos).
    - **Normalização de Ambientes:** Converte blocos avulsos para ambientes `figure` canônicos com `[htbp]`.
 3. **Galeria de Auditoria Visual em Alta Resolução:**
    - O script gera miniaturas PNG de alta resolução de cada página contendo figuras em `build/figures_review/`.

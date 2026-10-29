@@ -6,12 +6,13 @@ scripts/audit_and_fix_tikz.py
 Ferramenta canonica do pipeline book-resurrect para auditoria visual e auto-cura
 geometrica de ambientes TikZ e figuras flutuantes.
 
-Modulos:
+Diretriz Editorial:
 1. Normalizacao de figuras avulsas para ambientes figure canonicos com [htbp].
-2. Protocolo de Fundo Protetor compulsório (fill=white, inner sep=1.2pt).
-3. Desobstrucao geometrica de nos concorrentes (raios polares, cotas em eixos,
-   formulas de area em secantes e helicoides trigonométricos).
-4. Renderizacao em alta resolucao (300 DPI via pymupdf) de paginas com figuras
+2. Posicionamento de rotulos com coordenadas livres e ancoras direcionais
+   (above, below, left, right com afastamento de 3pt a 5pt).
+3. Transparencia vetorial 100% natural: PROIBIDO o uso de caixas brancas opacas
+   (fill=white) sobre eixos, curvas ou areas preenchidas.
+4. Renderizacao em alta resolucao (250 DPI via pymupdf) de paginas com figuras
    para inspecao visual em build/figures_review/.
 """
 
@@ -57,7 +58,6 @@ def normalizar_figuras_avulsas(content: str) -> tuple[str, int]:
         corpo = match.group(1).strip()
         label = match.group(2).strip()
         legenda = match.group(3).strip()
-        # Se a legenda tiver quebra de linha ou formatacao residual, limpa
         legenda = re.sub(r"^\\textit\{|\}$", "", legenda).strip()
         return (
             f"\\begin{{figure}}[htbp]\n"
@@ -73,178 +73,150 @@ def normalizar_figuras_avulsas(content: str) -> tuple[str, int]:
     return content, modificacoes
 
 
-def injetar_fundo_protetor_em_nos(tikz_block: str) -> tuple[str, int]:
-    """Injeta fill=white, inner sep=1.2pt em nos de texto ou formulas que nao possuem fundo."""
+def remover_fundos_opacos_em_nos(tikz_block: str) -> tuple[str, int]:
+    """Remove fundos brancos opacos indesejados em rotulos de texto ou formulas TikZ."""
     modificacoes = 0
 
-    # 1. Nos explicitos com colchetes: \node[...] at (...) {...};
-    # ou \draw ... node[...] {...};
-    pattern_node_opts = re.compile(r"(\bnode\s*\[)([^\]]*)(\]\s*(?:at\s*\([^)]+\)\s*)?\{[^}]+\})")
+    patterns = [
+        (re.compile(r',\s*fill=white(?:,\s*inner sep=[0-9.]+pt)?'), ''),
+        (re.compile(r'fill=white(?:,\s*inner sep=[0-9.]+pt)?,\s*'), ''),
+        (re.compile(r'\[\s*fill=white(?:,\s*inner sep=[0-9.]+pt)?\s*\]'), ''),
+        (re.compile(r'\[\s*fill=white\s*\]'), ''),
+        (re.compile(r',\s*rounded corners=[0-9.]+pt'), ''),
+    ]
 
-    def repl_opts(match):
-        nonlocal modificacoes
-        prefix = match.group(1)
-        opts = match.group(2)
-        suffix = match.group(3)
-
-        # Se ja tem fill ou se for apenas coordenador estrutural sem texto
-        if "fill=" in opts or "fill " in opts:
-            return match.group(0)
-
-        modificacoes += 1
-        sep = ", " if opts.strip() else ""
-        return f"{prefix}{opts}{sep}fill=white, inner sep=1.2pt{suffix}"
-
-    tikz_block, n1 = pattern_node_opts.subn(repl_opts, tikz_block)
-    modificacoes += n1
-
-    # 2. Nos sem colchetes: \node at (...) {...};
-    pattern_node_bare = re.compile(r"(\\node\s+)(at\s*\([^)]+\)\s*\{[^}]+\})")
-
-    def repl_bare(match):
-        nonlocal modificacoes
-        modificacoes += 1
-        return f"\\node[fill=white, inner sep=1.2pt] {match.group(2)}"
-
-    tikz_block, n2 = pattern_node_bare.subn(repl_bare, tikz_block)
-    modificacoes += n2
+    for pat, repl in patterns:
+        tikz_block, n = pat.subn(repl, tikz_block)
+        modificacoes += n
 
     return tikz_block, modificacoes
 
 
 def desobstruir_geometria_especifica(content: str, filename: str) -> tuple[str, int]:
-    """Aplica correcoes geometricas cirurgicas para casos conhecidos de colisao."""
+    """Aplica correcoes de coordenadas e ancoras direcionais com transparencia 100% natural."""
     modificacoes = 0
 
     # --------------------------------------------------------------------------
-    # CASO 1: Setores Polares Circulares (ex.: Figura 2.4)
-    # Raio R em pos=0.82 para afastar verticalmente do arco central theta
+    # CASO 1: Setores Polares Circulares (Figura 2.4)
+    # Raios R no ponto medio afastados lateralmente e arco de theta recuado
     # --------------------------------------------------------------------------
     if "fig:2.4" in content or "cap02" in filename:
-        content = re.sub(
-            r"\\draw\[thick\]\s*\(0,0\)\s*--\s*\(70:1\.2\)[^;]*;",
-            r"\\draw[thick] (0,0) -- (70:1.2) node[pos=0.82, right=3pt, fill=white, inner sep=1pt] {$R$};",
-            content
-        )
-        content = re.sub(
-            r"\\draw\[thick\]\s*\(0,0\)\s*--\s*\(110:1\.2\)[^;]*;",
-            r"\\draw[thick] (0,0) -- (110:1.2) node[pos=0.82, left=3pt, fill=white, inner sep=1pt] {$R$};",
-            content
-        )
-        content = re.sub(
-            r"\\draw\[<->\]\s*\(70:[0-9.]+\)\s*arc\s*\(70:110:[0-9.]+\);",
-            r"\\draw[<->] (70:0.35) arc (70:110:0.35);",
-            content
-        )
-        content = re.sub(
-            r"\\node(?:\[[^\]]*\])?\s*at\s*\(90:[0-9.]+\)\s*\{\\theta\};",
-            r"\\node[fill=white, inner sep=0.8pt] at (90:0.48) {$\\theta$};",
-            content
-        )
-        modificacoes += 1
+        old_f24_r1 = r"\draw[thick] (0,0) -- (70:1.2) node[pos=0.82, right=3pt] {$R$};"
+        new_f24_r1 = r"\draw[thick] (0,0) -- (70:1.2) node[midway, right=4pt] {$R$};"
+        if old_f24_r1 in content:
+            content = content.replace(old_f24_r1, new_f24_r1)
+            modificacoes += 1
+
+        old_f24_r2 = r"\draw[thick] (0,0) -- (110:1.2) node[pos=0.82, left=3pt] {$R$};"
+        new_f24_r2 = r"\draw[thick] (0,0) -- (110:1.2) node[midway, left=4pt] {$R$};"
+        if old_f24_r2 in content:
+            content = content.replace(old_f24_r2, new_f24_r2)
+            modificacoes += 1
+
+        old_f24_arc = r"\draw[<->] (70:0.35) arc (70:110:0.35);"
+        new_f24_arc = r"\draw[<->] (70:0.28) arc (70:110:0.28);"
+        if old_f24_arc in content:
+            content = content.replace(old_f24_arc, new_f24_arc)
+            modificacoes += 1
+
+        old_f24_th = r"\node[inner sep=1.2pt] at (90:0.55) {$\theta$};"
+        new_f24_th = r"\node at (90:0.42) {$\theta$};"
+        if old_f24_th in content:
+            content = content.replace(old_f24_th, new_f24_th)
+            modificacoes += 1
 
     # --------------------------------------------------------------------------
     # CASO 2: Hierarquia de Cotas em Eixos Cartesianos (Figura 2.7)
-    # Cotas em y=-0.4 colidindo com abscissas a e a+2m -> rebaixar para y=-0.65
+    # Cotas em y=-0.65 e ancoras de vertices com folga de 2pt a 3pt
     # --------------------------------------------------------------------------
     if "fig:2.7" in content or "cap02" in filename:
         old_cota_27_1 = r"\draw[<->] (0.6,-0.4) -- (1.6,-0.4) node[midway, below] {\footnotesize $m$};"
-        new_cota_27_1 = r"\draw[<->] (0.6,-0.65) -- (1.6,-0.65) node[midway, below, fill=white, inner sep=1pt] {\footnotesize $m$};"
+        new_cota_27_1 = r"\draw[<->] (0.6,-0.65) -- (1.6,-0.65) node[midway, below=1pt] {\footnotesize $m$};"
         if old_cota_27_1 in content:
             content = content.replace(old_cota_27_1, new_cota_27_1)
             modificacoes += 1
 
         old_cota_27_2 = r"\draw[<->] (1.6,-0.4) -- (2.6,-0.4) node[midway, below] {\footnotesize $m$};"
-        new_cota_27_2 = r"\draw[<->] (1.6,-0.65) -- (2.6,-0.65) node[midway, below, fill=white, inner sep=1pt] {\footnotesize $m$};"
+        new_cota_27_2 = r"\draw[<->] (1.6,-0.65) -- (2.6,-0.65) node[midway, below=1pt] {\footnotesize $m$};"
         if old_cota_27_2 in content:
             content = content.replace(old_cota_27_2, new_cota_27_2)
             modificacoes += 1
 
     # --------------------------------------------------------------------------
-    # CASO 3: Destacando o Trapézio APQB (Figura 2.8)
-    # Cotas em y=-0.48 colidindo com P, S, Q em y=0 -> rebaixar para y=-0.68
+    # CASO 3: Trapézio APQB (Figura 2.8)
+    # Cotas em y=-0.68 sem colidir com rotulos do eixo
     # --------------------------------------------------------------------------
     if "fig:2.8" in content or "cap02" in filename:
         old_cota_28_1 = r"\draw[<->] (0.8,-0.48) -- (2.0,-0.48) node[midway, below] {\footnotesize $m$};"
-        new_cota_28_1 = r"\draw[<->] (0.8,-0.68) -- (2.0,-0.68) node[midway, below, fill=white, inner sep=1pt] {\footnotesize $m$};"
+        new_cota_28_1 = r"\draw[<->] (0.8,-0.68) -- (2.0,-0.68) node[midway, below=1pt] {\footnotesize $m$};"
         if old_cota_28_1 in content:
             content = content.replace(old_cota_28_1, new_cota_28_1)
             modificacoes += 1
 
         old_cota_28_2 = r"\draw[<->] (2.0,-0.48) -- (3.2,-0.48) node[midway, below] {\footnotesize $m$};"
-        new_cota_28_2 = r"\draw[<->] (2.0,-0.68) -- (3.2,-0.68) node[midway, below, fill=white, inner sep=1pt] {\footnotesize $m$};"
+        new_cota_28_2 = r"\draw[<->] (2.0,-0.68) -- (3.2,-0.68) node[midway, below=1pt] {\footnotesize $m$};"
         if old_cota_28_2 in content:
             content = content.replace(old_cota_28_2, new_cota_28_2)
             modificacoes += 1
 
     # --------------------------------------------------------------------------
     # CASO 4: Formulas de Area em Regioes Secantes (Figura 2.9)
-    # A = m^3 posicionado no baricentro do triangulo (1.95, 1.34) com fundo protetor
+    # A = m^3 transparente posicionado acima da secante em espaco livre
     # --------------------------------------------------------------------------
     if "fig:2.9" in content or "cap02" in filename:
-        content = re.sub(
-            r"\\node(?:\[[^\]]*\])?\s*at\s*\(1\.9,\s*1\.[0-9]+\)\s*\{\\bfseries\s*\$A\s*=\s*m\^3\$\};",
-            r"\\node[fill=white, inner sep=1.4pt, font=\\footnotesize\\bfseries] at (1.95, 1.34) {$A = m^3$};",
-            content
-        )
-        modificacoes += 1
-
+        old_f29_1 = r"\node[font=\footnotesize\bfseries] at (2.0, 1.33) {$A = m^3$};"
+        old_f29_2 = r"\node[font=\footnotesize\bfseries] at (1.95, 1.34) {$A = m^3$};"
+        old_f29_3 = r"\node at (1.9, 1.4) {\bfseries $A = m^3$};"
+        old_f29_4 = r"\node[above left=3pt, font=\footnotesize\bfseries] at (1.85, 1.4) {$A = m^3$};"
+        new_f29 = r"\node[above left, font=\footnotesize\bfseries] at (1.6, 1.35) {$A = m^3$};"
+        for old_f in [old_f29_1, old_f29_2, old_f29_3, old_f29_4]:
+            if old_f in content:
+                content = content.replace(old_f, new_f29)
+                modificacoes += 1
         old_cota_29_1 = r"\draw[<->] (0.8,-0.2) -- (2.0,-0.2) node[midway, below] {\footnotesize $m$};"
-        new_cota_29_1 = r"\draw[<->] (0.8,-0.55) -- (2.0,-0.55) node[midway, below, fill=white, inner sep=1pt] {\footnotesize $m$};"
+        new_cota_29_1 = r"\draw[<->] (0.8,-0.55) -- (2.0,-0.55) node[midway, below=1pt] {\footnotesize $m$};"
         if old_cota_29_1 in content:
             content = content.replace(old_cota_29_1, new_cota_29_1)
             modificacoes += 1
 
         old_cota_29_2 = r"\draw[<->] (2.0,-0.2) -- (3.2,-0.2) node[midway, below] {\footnotesize $m$};"
-        new_cota_29_2 = r"\draw[<->] (2.0,-0.55) -- (3.2,-0.55) node[midway, below, fill=white, inner sep=1pt] {\footnotesize $m$};"
+        new_cota_29_2 = r"\draw[<->] (2.0,-0.55) -- (3.2,-0.55) node[midway, below=1pt] {\footnotesize $m$};"
         if old_cota_29_2 in content:
             content = content.replace(old_cota_29_2, new_cota_29_2)
             modificacoes += 1
 
     # --------------------------------------------------------------------------
     # CASO 5: Vertices com Projecoes e Secantes (Figuras 2.10 e 2.11)
-    # Evitar que o prolongamento da secante atravesse os rotulos de A e B
+    # Letras A, B e N com afastamento de 3pt a 4pt
     # --------------------------------------------------------------------------
     if ("fig:2.10" in content or "fig:2.11" in content or "cap02" in filename):
         content = re.sub(
             r"\\fill\s*\(A\)\s*circle\s*\([0-9.]+pt\)\s*node\[left(?:,\s*[^\]]*)?\]\s*\{\$A\$\};",
-            r"\\fill (A) circle (1.5pt) node[above left=1pt, fill=white, inner sep=1pt] {$A$};",
+            r"\\fill (A) circle (1.5pt) node[above left=3pt] {$A$};",
             content
         )
         content = re.sub(
             r"\\fill\s*\(B\)\s*circle\s*\([0-9.]+pt\)\s*node\[right(?:,\s*[^\]]*)?\]\s*\{\$B\$\};",
-            r"\\fill (B) circle (1.5pt) node[above right=1pt, fill=white, inner sep=1pt] {$B$};",
+            r"\\fill (B) circle (1.5pt) node[above right=3pt] {$B$};",
             content
         )
         content = re.sub(
             r"\\fill\s*\(N\)\s*circle\s*\([0-9.]+pt\)\s*node\[below right(?:,\s*[^\]]*)?\]\s*\{\$N\$\};",
-            r"\\fill (N) circle (1.5pt) node[below right=2pt, fill=white, inner sep=1pt] {$N$};",
+            r"\\fill (N) circle (1.5pt) node[below right=3pt] {$N$};",
             content
         )
         modificacoes += 1
-
-    # --------------------------------------------------------------------------
-    # CASO 6: Circulo Trigonometrico (Figura 3.12)
-    # --------------------------------------------------------------------------
-    if "fig:3.12" in content or "cap03" in filename:
-        # Se contiver a versao antiga com sin(x) colidindo
-        if r"\node[above, font=\footnotesize, blue!80!black] at ({cos(38)/2}" in content:
-            content = content.replace(
-                r"\node[above, font=\footnotesize, blue!80!black] at ({cos(38)/2}",
-                r"\node[left, font=\footnotesize, blue!80!black, fill=white, inner sep=1.2pt] at ({cos(38)-0.02}"
-            )
-            modificacoes += 1
 
     return content, modificacoes
 
 
 def processar_capitulos(capitulos_dir: Path) -> dict:
-    """Varre todos os capitulos .tex, aplicando auto-cura em figuras e TikZ."""
+    """Varre todos os capitulos .tex, higienizando figuras e TikZ."""
     stats = {
         "arquivos_processados": 0,
         "figuras_normalizadas": 0,
         "ajustes_geometricos": 0,
-        "nos_com_fundo": 0
+        "fundos_opacos_removidos": 0
     }
 
     tex_files = sorted(list(capitulos_dir.glob("*.tex")))
@@ -265,7 +237,7 @@ def processar_capitulos(capitulos_dir: Path) -> dict:
         modificado, n_geo = desobstruir_geometria_especifica(modificado, tex_path.name)
         stats["ajustes_geometricos"] += n_geo
 
-        # 3. Aplicar fundo protetor dentro de blocos tikzpicture
+        # 3. Remover fundos opacos espurios em blocos tikzpicture
         pattern_tikz = re.compile(r"(\\begin\{tikzpicture\}(?:\[.*?\])?)(.*?)(\\end\{tikzpicture\})", re.DOTALL)
 
         def repl_tikz(match):
@@ -273,17 +245,17 @@ def processar_capitulos(capitulos_dir: Path) -> dict:
             header = match.group(1)
             body = match.group(2)
             footer = match.group(3)
-            new_body, n_nodes = injetar_fundo_protetor_em_nos(body)
-            stats["nos_com_fundo"] += n_nodes
+            new_body, n_rem = remover_fundos_opacos_em_nos(body)
+            stats["fundos_opacos_removidos"] += n_rem
             return f"{header}{new_body}{footer}"
 
         modificado = pattern_tikz.sub(repl_tikz, modificado)
 
-        # Salva apenas se houve mudanca real
+        # Salva se houve mudanca
         if modificado != original:
             with open(tex_path, "w", encoding="utf-8") as f:
                 f.write(modificado)
-            print(f"  [CURA] {tex_path.name}: atualizado com sucesso.")
+            print(f"  [SANEAMENTO] {tex_path.name}: atualizado.")
 
     return stats
 
@@ -292,7 +264,7 @@ def processar_capitulos(capitulos_dir: Path) -> dict:
 # MODULO DE RENDERIZACAO DE AUDITORIA VISUAL (REVIEW GALLERY)
 # ==============================================================================
 
-def renderizar_galeria_auditoria(pdf_path: Path, review_dir: Path, targets: list[str] | None = None, dpi: int = 300) -> list[dict]:
+def renderizar_galeria_auditoria(pdf_path: Path, review_dir: Path, targets: list[str] | None = None, dpi: int = 250) -> list[dict]:
     """Renderiza paginas contendo figuras em PNG de alta resolucao."""
     if not fitz:
         print("[AVISO] PyMuPDF (fitz) nao encontrado. Renderizacao visual ignorada.")
@@ -310,7 +282,6 @@ def renderizar_galeria_auditoria(pdf_path: Path, review_dir: Path, targets: list
     galeria_relatorio = []
     paginas_alvo = set()
 
-    # Mapeia quais paginas contem "Figura"
     for page_idx in range(total_pages):
         page = doc.load_page(page_idx)
         text = page.get_text()
@@ -318,14 +289,12 @@ def renderizar_galeria_auditoria(pdf_path: Path, review_dir: Path, targets: list
         encontrou = False
         fig_refs = []
 
-        # Procura por "Figura X.Y"
         matches = re.findall(r"Figura\s+(\d+\.\d+)", text)
         if matches:
             encontrou = True
             fig_refs = matches
 
         if targets:
-            # Se filtrou alvos especificos
             if any(t in fig_refs for t in targets):
                 paginas_alvo.add((page_idx, tuple(fig_refs)))
         else:
@@ -352,7 +321,6 @@ def renderizar_galeria_auditoria(pdf_path: Path, review_dir: Path, targets: list
         })
         print(f"  [RENDER] Pagina {num_pag} (Figuras {figs}) -> {png_name}")
 
-    # Cria relatorio Markdown da galeria
     index_md = review_dir / "INDEX.md"
     with open(index_md, "w", encoding="utf-8") as f:
         f.write("# Galeria de Auditoria Visual de Figuras\n\n")
@@ -373,7 +341,7 @@ def renderizar_galeria_auditoria(pdf_path: Path, review_dir: Path, targets: list
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Auditoria e Auto-Cura Geometrica de Figuras TikZ (book-resurrect)"
+        description="Auditoria e Saneamento Geometrico de Figuras TikZ (book-resurrect)"
     )
     parser.add_argument(
         "--capitulos",
@@ -424,17 +392,16 @@ def main():
 
     # 1. Processar capitulos
     stats = processar_capitulos(capitulos_dir)
-    print("\n[RESULTADO DA AUTO-CURA]")
+    print("\n[RESULTADO DO SANEAMENTO]")
     print(f"- Arquivos analisados: {stats['arquivos_processados']}")
     print(f"- Figuras avulsas normalizadas: {stats['figuras_normalizadas']}")
     print(f"- Ajustes geometricos especificos: {stats['ajustes_geometricos']}")
-    print(f"- Nos com fundo protetor aplicado: {stats['nos_com_fundo']}")
+    print(f"- Fundos opacos removidos: {stats['fundos_opacos_removidos']}")
 
     # 2. Renderizar auditoria visual
     if not args.skip_render:
         pdf_path = Path(args.pdf)
         if not pdf_path.exists():
-            # Fallback para main.pdf na raiz se build/main.pdf nao existir
             if Path("main.pdf").exists():
                 pdf_path = Path("main.pdf")
 
@@ -442,7 +409,7 @@ def main():
         review_dir = Path(args.review_dir)
         renderizar_galeria_auditoria(pdf_path, review_dir, targets=targets_list, dpi=args.dpi)
 
-    print("\nAuditoria e auto-cura concluidas com sucesso.")
+    print("\nAuditoria e saneamento concluidos com sucesso.")
 
 
 if __name__ == "__main__":
