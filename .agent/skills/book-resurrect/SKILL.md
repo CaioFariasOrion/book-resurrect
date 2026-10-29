@@ -368,6 +368,7 @@ Ao ser acionado para processamento ponta a ponta sem intervenção humana:
    - Quando não restarem lotes `"pending"` e todos os subagentes ativos finalizarem, o Maestro aciona automaticamente o **Modo Maestro: Consolidar** (Item 3).
 
 ### 2. Modo Operário (Executado por Subagente ou Chat Independente)
+- **Escopo Estrito de Transcrição e Validação Sintática:** O operário da Fase 3 tem escopo estritamente delimitado à transcrição textual fiel (100% do conteúdo da página) e à validação sintática com compilação limpa (`exit code 0`). A calibração visual fina de coordenadas ocorre de forma desacoplada na Fase 4.
 - **Escopo de Escrita Isolado:** Escrever exclusivamente no arquivo `.tex` do lote designado (`capitulos/<nome_unico>.tex`).
 - **Isolamento Gráfico:** Utilizar prefixo exclusivo por lote em figuras recortadas (`figuras/<lote>_fig_Y.png`) ou construir ilustrações diretamente em TikZ vetorial no corpo do arquivo `.tex`.
 - **Fatiamento Restrito:** Executar `slice_pdf.py` estritamente para o intervalo de páginas (`--start` e `--end`) do seu lote.
@@ -377,7 +378,7 @@ Ao ser acionado para processamento ponta a ponta sem intervenção humana:
   - **PROIBIDO** englobar múltiplos exemplos, tabelas ou gráficos TikZ dentro de caixas fechadas `tcolorbox`. Exemplos devem ser sempre texto corrido com `\begin{exemplo}`.
   - **PROIBIÇÃO DE LEGENDAS AVULSAS:** PROIBIDO usar `\begin{center} ... \refstepcounter{figure}` manual. Toda figura deve usar obrigatoriamente `\begin{figure}[htbp] ... \caption{...} \label{...} \end{figure}`.
   - **PROIBIÇÃO DE RÉGUAS MANUAIS:** PROIBIDO injetar `\hrule` manual ou excessos de `\vspace` dentro dos capítulos. Para divisórias em exemplos, use a macro semântica canônica `\divisorexemplo`.
-  - **PROTOCOLO ANTICOLISÃO NO TIKZ:** Todo `node` de texto próximo a curvas, vetores ou eixos deve possuir âncoras direcionais explícitas (`above left`, `below right`, `xshift`, `yshift`) e fundo protetor `fill=white, inner sep=1.5pt`. Gráficos com ramos assintóticos devem obrigatoriamente conter `\clip` para evitar vazamento da mancha.
+  - **PROIBIÇÃO CATEGÓRICA DE CAIXAS OPACAS (`fill=white`) NO TIKZ:** É terminantemente **PROIBIDO** utilizar `fill=white` (ou qualquer `fill=...` opaco) em nós de texto (`\node`) sobrepondo eixos, linhas, curvas ou hachuras coloridas. Rótulos e nós matemáticos devem possuir fundo estritamente transparente e âncoras direcionais explícitas (`above left`, `below right`, `above`, `below`, `left`, `right`) posicionadas em espaço limpo. Gráficos com ramos assintóticos devem obrigatoriamente conter `\clip` para evitar vazamento da mancha.
   - Tabelas matemáticas e tabelas-verdade devem usar o estilo respirável `booktabs`, evitando grades completas claustrofóbicas em todas as células.
 - **Bloqueio de Concorrência e Imutabilidade (Inviolável):**
   - PROIBIDO ler, abrir ou editar `main.tex`.
@@ -396,33 +397,39 @@ Ao ser acionado para processamento ponta a ponta sem intervenção humana:
 
 ---
 
-## FASE 4: Revisão Editorial e Auto-Cura Desacoplada (Gatilho: `@book-resurrect revisar`)
+## FASE 4: Curadoria Visual Multiagente & Pipeline de Dois Níveis (Gatilho: `@book-resurrect revisar`)
 
-Estágio independente acionado sob demanda após a compilação do `main.pdf`. Opera em 3 Estágios mandatórios:
+Estágio independente de engenharia de qualidade acionado após a consolidação sintática da Fase 3. Opera em 4 passos estruturados em dois níveis (Microcompilação Atômica `standalone` $\rightarrow$ Macrocompilação Consolidada):
 
-### Estágio 4.1 — Hard Reset de Preâmbulo e Linter de Código
-1. **Sincronização Canônica:** Sobrescrever ou sincronizar as macros do `preambulo.tex` local com o template canônico de Ciências Exatas (`templates/preambulo.tex`), garantindo que a mancha gráfica B5, a ancoragem de `figure` via `minipage` e as caixas semânticas mínimas estejam ativas.
-2. **Linter Estrutural de Capítulos:** Executar script de linting nos arquivos `capitulos/*.tex`:
-   - Converte automaticamente blocos avulsos `\begin{center} ... \refstepcounter{figure}` para ambientes canônicos `\begin{figure}[htbp] ... \caption{...} \label{...} \end{figure}`.
-   - Higieniza e padroniza réguas manuais `\hrule` duplicadas ou com `\vspace` soltos para a macro semântica protegida `\divisorexemplo`.
+### Passo 4.1 — Auditoria Editorial (Operário Editorial Dedicado)
+1. **Saneamento de Preliminares e Preâmbulo:** Sincronizar `preambulo.tex` com `templates/preambulo.tex`, garantindo mancha gráfica B5, ancoragem determinística de `figure` via `minipage`, caixas semânticas com fio lateral de `1.2pt`, Capa (`\inserircapa`), Folha de Rosto (`\folhaderosto`), Manifesto Editorial (`\manifestoeditorial`) e Sumário íntegro.
+2. **Controle de Viúvas, Órfãos e Linter Estrutural:** Garantir penalidades máximas contra linhas viúvas/órfãs (`\widowpenalty=10000`, `\clubpenalty=10000`, `\raggedbottom`) e executar `scripts/audit_and_fix_tikz.py` para varrer e erradicar qualquer ocorrência residual de `fill=white` em rótulos, normalizar ambientes `figure` e higienizar réguas `\divisorexemplo`.
 
-### Estágio 4.2: Auditoria Visual, Desobstrução Geométrica e Galeria de Revisão
-1. **Execução Mandatória do Script de Auditoria e Saneamento:**
-   Execute o script canônico de varredura e desobstrução geométrica:
+### Passo 4.2 — Geração de Catálogo e Manifesto Atômico (`render_isolated_figures.py`)
+1. **Execução Obrigatória do Motor de Microcompilação:**
    ```bash
-   python scripts/audit_and_fix_tikz.py --capitulos capitulos/ --pdf build/main.pdf --review-dir build/figures_review --dpi 250
+   python scripts/render_isolated_figures.py
    ```
-2. **Mapeamento e Regras de Saneamento de TikZ:**
-   - **Transparência Vetorial Natural:** PROIBIDO o uso de caixas brancas opacas (`fill=white`) sobre gráficos, eixos, curvas ou áreas coloridas preenchidas. O design deve manter o fundo transparente editorial.
-   - **Desobstrução por Coordenadas e Âncoras:** Ajusta coordenadas livres e âncoras direcionais (`above`, `below`, `left`, `right` com folga de 3pt a 5pt) em nós concorrentes (afastamento ortogonal em retas secantes e tangentes, orientação externa de raios $R$ em setores polares, hierarquia vertical de cotas nos eixos cartesianos).
-   - **Normalização de Ambientes:** Converte blocos avulsos para ambientes `figure` canônicos com `[htbp]`.
-3. **Galeria de Auditoria Visual em Alta Resolução:**
-   - O script gera miniaturas PNG de alta resolução de cada página contendo figuras em `build/figures_review/`.
-   - Produz automaticamente o índice `build/figures_review/INDEX.md` com tabela de correspondência (página do PDF, figuras detectadas e link para visualização direta da imagem).
-4. **Análise de Log:** Varrer `build/main.log` para sanar avisos de `Overfull \hbox` e orfandades graves (`Underfull \vbox`).
+2. **Extração e Rasterização Isolada:** O script varre recursivamente `capitulos/cap*.tex`, isola cada bloco `\begin{tikzpicture} ... \end{tikzpicture}` dentro de ambientes `figure`, compila cada figura individualmente com `\documentclass[tikz,border=2pt]{standalone}` (tempo-alvo `< 0,6 s` por figura) e gera PNGs de alta definição (250 a 300 DPI) em `build/figures_catalog/fig_XX_YY.png`.
+3. **Manifesto de Estado (`build/figures_catalog/manifest.json`):** Mapeia todas as figuras da obra registrando `fig_id`, `chapter_file`, `line_start`, `line_end`, `png_path` e `status` (`"pending"` ou `"approved"`).
 
-### Estágio 4.3 — Empacotamento Institucional e Despacho
-1. **Verificação de Preliminares:** Validar a presença de Capa (via `\inserircapa`), Folha de Rosto e Verso Institucional (com Fênix Azul e Manifesto Editorial).
-2. **Catálogo de Erratas (`ERRATA.md`):** Divergências conceituais ou gralhas históricas detectadas contra o scan original devem ser catalogadas em `ERRATA.md` com as opções `[M] Manter`, `[C] Corrigir no texto` ou `[N] Nota de Rodapé`.
-3. **Despacho Semântico para a Raiz:**
-   - Após a compilação com sucesso (`exit code 0`), `scripts/compile_check.py` lê o título da obra e o autor (de `roadmap.json` ou `main.tex`), sanitiza o nome e copia `build/main.pdf` diretamente para a raiz do repositório como `<Titulo>_<Autor>.pdf` (ou `main.pdf`).
+### Passo 4.3 — Loop de Autocura Paralelo por Capítulo (Operários Gráficos)
+1. **Particionamento Estrito por Arquivo de Capítulo:** O Maestro instancia Operários Gráficos em paralelo via `invoke_subagent`, onde cada operário recebe permissão de escrita restrita exclusivamente ao seu respectivo arquivo de capítulo (`capitulos/cap02.tex`, `capitulos/cap03.tex`, etc.), eliminando condições de corrida.
+2. **Ciclo Fechado de Inspeção e Microcompilação:** Para cada figura com `status: "pending"` pertencente ao seu capítulo no `manifest.json`:
+   - O Operário Gráfico inspeciona visualmente `build/figures_catalog/fig_XX_YY.png`.
+   - Caso detecte colisão de rótulos com retas/curvas, sobreposição de símbolos (como raio $R$ e ângulo $\theta$) ou vazamento de eixos, edita as coordenadas e âncoras direcionais (`above left`, `below right`, etc.) diretamente em `capitulos/capXX.tex` **sem jamais usar `fill=white`**.
+   - Revalida apenas a figura alterada em menos de 0,6 s:
+     ```bash
+     python scripts/render_isolated_figures.py --fig-id fig_XX_YY
+     ```
+   - Inspeciona o novo PNG e, confirmada a ausência total de colisões, marca a figura como aprovada no manifesto:
+     ```bash
+     python scripts/render_isolated_figures.py --fig-id fig_XX_YY --set-status approved --extract-only
+     ```
+
+### Passo 4.4 — Macrocompilação Consolidada e Despacho Final
+1. **Trava de Aprovação do Manifesto:** Somente após todas as figuras em `build/figures_catalog/manifest.json` atingirem `status: "approved"`, o Maestro dispara uma compilação única do livro completo:
+   ```bash
+   python scripts/compile_check.py --main main.tex --outdir build
+   ```
+2. **Galeria Consolidada e Erratas:** Gera o índice final de revisão em `build/figures_review/INDEX.md` via `scripts/audit_and_fix_tikz.py`, atualiza `ERRATA.md` se aplicável e conclui o despacho semântico de `<Titulo>_<Autor>.pdf` na raiz do workspace.
