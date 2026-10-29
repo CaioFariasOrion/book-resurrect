@@ -90,43 +90,20 @@ Se `scripts/` e `templates/` já existirem, ignore esta seção.
 ## FASE 0 — Inicialização de Ambiente e Mapeamento de Sumário
 *(Execute esta fase APENAS se o arquivo `roadmap.json` NÃO existir na raiz do projeto).*
 
-### Passo 0.1 — Setup de Ambiente e Estrutura
-1. Execute no terminal:
+### Passo 0.1 — Execução Atômica do Mapeamento (`init_book_fase0.py`)
+Para garantir latência ultrabaixa (< 3 segundos) e eliminar o desperdício de turnos conversacionais:
+1. Execute imediatamente o utilitário determinístico passando as opções validadas na Triagem Interativa:
    ```bash
-   python scripts/setup_env.py
+   python scripts/init_book_fase0.py --pdf "<arquivo.pdf>" --project-mode <project_mode> --translation-mode <translation_mode> --figure-mode <figure_mode> --editorial-profile <editorial_profile>
    ```
-   Isso garante que `pymupdf` (`fitz`), `pillow` (`PIL`) e o compilador portátil `tectonic` estejam instalados e operacionais.
-2. Verifique se `main.tex` e `preambulo.tex` existem na raiz do workspace. Se não existirem, copie-os de `templates/main.tex` e `templates/preambulo.tex` para a raiz (`.`).
-3. Garanta que os diretórios `capitulos/`, `figuras/` e `build/` existam na raiz do workspace.
+2. O script executa de forma programática e instantânea:
+   - Divisão geométrica de folhas duplas em páginas verticais (`split_double_pages.py`).
+   - Extração do sumário nativo (TOC) ou particionamento dinâmico sem lacunas.
+   - Geração de `roadmap.json`, `progress.json`, diretórios estruturais (`capitulos/`, `figuras/`, `build/`) e arquivos esqueleto de capítulos.
+   - Geração de `metadata.yaml` (para `humanas_markdown`) ou sincronização de `main.tex` e `preambulo.tex` (para `exatas_latex`).
 
-### Passo 0.2 — Inspeção de Geometria e Leitura Visual do Sumário
-1. Identifique o arquivo `.pdf` do livro na raiz do workspace.
-2. **Inspeção de Geometria do PDF:** Antes de fatiar ou mapear o sumário, execute:
-   ```bash
-   python scripts/split_double_pages.py "<livro.pdf>"
-   ```
-   Se o script gerar `<livro>_single_pages.pdf`, atualize automaticamente o ponteiro do livro (`source_pdf`) para esse arquivo vertical, prosseguindo com a leitura do sumário e a geração do `roadmap.json`.
-3. Renderize as primeiras 15 páginas para localizar o Sumário (Índice) e a primeira página numerada do conteúdo:
-   ```bash
-   python scripts/slice_pdf.py --pdf "<arquivo.pdf>" --start 1 --end 15 --out build/temp_pages
-   ```
-4. Inspecione visualmente as imagens `build/temp_pages/page_001.png` até `page_015.png`. Se o sumário se estender além da página 15, renderize páginas adicionais (ex.: `--start 16 --end 25`).
-
-### Passo 0.3 — Dimensionamento Dinâmico de Lotes Semânticos
-1. **Cálculo do Deslocamento (`offset`)**:
-   Localize a primeira página onde o conteúdo numerado começa e determine a relação exata:
-   $$\text{offset} = \text{pagina\_pdf} - \text{pagina\_livro}$$
-2. **Regra de Dimensionamento Dinâmico (Anti-Contenção):**
-   - **Lotes com Figuras Geométricas/TikZ:** Dimensionar rigorosamente entre **6 e 8 páginas** por lote (padrão: 8 páginas). Isso evita sobrecarga de tokens multimodais, saturação de memória e ciclos longos de auto-cura.
-   - **Lotes sem Figuras (Texto corrido, tabelas, deduções puramente algébricas):** Dimensionar em **10 páginas** por lote (teto máximo absoluto: 12 páginas).
-   - **Regra de Integridade**: Nenhuma seção, demonstração matemática ou lista de exercícios pode ser cortada ao meio.
-   - **Separação Teoria vs. Exercícios**: Sempre separe seções de Teoria/Exemplos das seções de Problemas Propostos / Resoluções / Gabaritos em lotes distintos.
-
-### Passo 0.4 — Persistência Inicial (`roadmap.json` e `progress.json`)
-1. Salve o mapeamento completo em `roadmap.json` na raiz do projeto contendo `max_concurrent_workers: 8`.
-2. Crie o arquivo `progress.json` na raiz do projeto inicializando todos os lotes com status `"pending"`.
-3. Crie os arquivos `.tex` vazios correspondentes dentro de `capitulos/` e registre os `\include{capitulos/capXX}` em `main.tex`.
-4. **Checkpoint da Fase 0**: PARE a execução e apresente a tabela Markdown solicitando confirmação para a Fase 1.
+3. **Transição Imediata para a Fase 1:**
+   - Com `roadmap.json` e `progress.json` gravados em disco, passe imediatamente para a **Fase 1**, iniciando a transcrição dos lotes sem paradas conversacionais intermediárias.
 
 ---
 
