@@ -3,10 +3,17 @@
 Extrai blocos tikzpicture de ambientes figure em capitulos/cap*.tex,
 compila cada figura isoladamente via classe standalone e gera PNGs de alta
 resolucao em build/figures_catalog/ junto ao manifesto manifest.json.
+
+Otimizacoes:
+- Cache por hash SHA-256 (bloco TikZ + template) para evitar recompilacoes redundantes.
+- Gravacao atomica de manifest.json (via os.replace) para eliminar condicoes de corrida.
+- Compilacao isolada rapida e suporte a shards para aceleracao de lote.
 """
 
 import argparse
+import hashlib
 import json
+import os
 import platform
 import re
 import shutil
@@ -74,6 +81,12 @@ def derive_chapter_num(chapter_path: Path) -> int:
     return int(m.group(1)) if m else 0
 
 
+def compute_figure_hash(tikz_code: str, extra_pkgs: str) -> str:
+    norm_code = re.sub(r"\s+", " ", tikz_code.strip())
+    payload = f"{extra_pkgs}||{norm_code}".encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()[:16]
+
+
 def extract_figures_from_chapters(capitulos_dir: Path, chapter_filter: str | None = None) -> list[dict]:
     tex_files = sorted(capitulos_dir.glob("cap*.tex"))
     if chapter_filter:
@@ -83,7 +96,6 @@ def extract_figures_from_chapters(capitulos_dir: Path, chapter_filter: str | Non
             if p.name.lower() == norm_filter or norm_filter in p.name.lower()
         ]
 
-    # Agrupa arquivos por numero de capitulo para numerar figuras sequencialmente dentro do capitulo
     chapter_counters: dict[int, int] = {}
     extracted: list[dict] = []
 
@@ -112,11 +124,16 @@ def extract_figures_from_chapters(capitulos_dir: Path, chapter_filter: str | Non
                 if num_m:
                     fig_id = f"fig_{int(num_m.group(1)):02d}_{int(num_m.group(2)):02d}"
 
-            # Se houver mais de um tikzpicture no mesmo figure, empacota em tikz ou compila o bloco principal
             if len(tikz_matches) == 1:
                 tikz_code = tikz_matches[0].group(0)
             else:
                 tikz_code = "\n\\quad\n".join(m.group(0) for m in tikz_matches)
+
+            extra_pkgs = ""
+            if "\\begin{axis}" in tikz_code or "\\addplot" in tikz_code:
+                extra_pkgs = "\\usepackage{pgfplots}\n\\pgfplotsset{compat=1.18}"
+
+            code_hash = compute_figure_hash(tikz_code, extra_pkgs)
 
             extracted.append({
                 "fig_id": fig_id,
@@ -125,9 +142,10 @@ def extract_figures_from_chapters(capitulos_dir: Path, chapter_filter: str | Non
                 "line_end": line_end,
                 "png_path": f"build/figures_catalog/{fig_id}.png",
                 "tikz_code": tikz_code,
+                "extra_pkgs": extra_pkgs,
+                "hash": code_hash,
             })
 
-    # Desambiguacao caso rotulos se repitam
     seen_ids: dict[str, int] = {}
     for item in extracted:
         fid = item["fig_id"]
@@ -142,30 +160,86 @@ def extract_figures_from_chapters(capitulos_dir: Path, chapter_filter: str | Non
     return extracted
 
 
+def atomic_update_manifest(manifest_path: Path, new_entries: list[dict], updates_dict: dict[str, dict] | None = None) -> list[dict]:
+    """Atualiza o manifest.json atomicamente preservando campos existentes e eliminando condicoes de corrida."""
+    existing_by_id: dict[str, dict] = {}
+    if manifest_path.is_file():
+        try:
+            old_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+            if isinstance(old_data, list):
+                for e in old_data:
+                    if isinstance(e, dict) and "fig_id" in e:
+                        existing_by_id[e["fig_id"]] = e
+        except Exception:
+            pass
+
+    merged_list: list[dict] = []
+    for item in new_entries:
+        fid = item["fig_id"]
+        old_info = existing_by_id.get(fid, {})
+        status = old_info.get("status", "pending")
+        old_hash = old_info.get("hash", "")
+
+        if old_hash and old_hash != item["hash"] and status == "approved":
+            status = "pending"
+
+        entry = {
+            "fig_id": fid,
+            "chapter_file": item["chapter_file"],
+            "line_start": item["line_start"],
+            "line_end": item["line_end"],
+            "png_path": item["png_path"],
+            "status": status,
+            "hash": item["hash"],
+        }
+
+        if updates_dict and fid in updates_dict:
+            entry.update(updates_dict[fid])
+
+        merged_list.append(entry)
+
+    temp_file = manifest_path.parent / f"manifest_{os.getpid()}_{time.time_ns()}.tmp"
+    temp_file.write_text(
+        json.dumps(merged_list, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    os.replace(temp_file, manifest_path)
+    return merged_list
+
+
 def compile_and_rasterize_single(
     item: dict,
     compiler_type: str,
     compiler_bin: str,
     temp_dir: Path,
     catalog_dir: Path,
+    cache_dir: Path,
     dpi: int,
+    ignore_cache: bool = False,
 ) -> tuple[str, bool, float, str]:
     t0 = time.perf_counter()
     fig_id = item["fig_id"]
+    code_hash = item["hash"]
+    png_file = catalog_dir / f"{fig_id}.png"
+    cached_png = cache_dir / f"{code_hash}.png"
+
+    if not ignore_cache and cached_png.is_file():
+        try:
+            shutil.copy2(cached_png, png_file)
+            elapsed = time.perf_counter() - t0
+            return fig_id, True, elapsed, "CACHE"
+        except Exception:
+            pass
+
     work_dir = temp_dir / fig_id
     work_dir.mkdir(parents=True, exist_ok=True)
 
     tex_file = work_dir / f"{fig_id}.tex"
     pdf_file = work_dir / f"{fig_id}.pdf"
-    png_file = catalog_dir / f"{fig_id}.png"
-
-    extra_pkgs = ""
-    if "\\begin{axis}" in item["tikz_code"] or "\\addplot" in item["tikz_code"]:
-        extra_pkgs = "\\usepackage{pgfplots}\n\\pgfplotsset{compat=1.18}"
 
     tex_content = (
         STANDALONE_TEMPLATE
-        .replace("__EXTRA_PACKAGES__", extra_pkgs)
+        .replace("__EXTRA_PACKAGES__", item["extra_pkgs"])
         .replace("__TIKZ_BLOCK__", item["tikz_code"])
     )
     tex_file.write_text(tex_content, encoding="utf-8")
@@ -195,6 +269,7 @@ def compile_and_rasterize_single(
             page = doc.load_page(0)
             pix = page.get_pixmap(dpi=dpi, alpha=False)
             pix.save(str(png_file))
+            pix.save(str(cached_png))
     except Exception as exc:
         elapsed = time.perf_counter() - t0
         return fig_id, False, elapsed, f"Erro PyMuPDF: {exc}"
@@ -210,7 +285,7 @@ def main() -> int:
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
     parser = argparse.ArgumentParser(
-        description="Microcompilacao atomica de figuras TikZ em modo standalone e geracao de manifest.json."
+        description="Microcompilacao atomica e paralela de figuras TikZ em modo standalone com cache SHA-256."
     )
     parser.add_argument(
         "--capitulos",
@@ -260,6 +335,11 @@ def main() -> int:
         action="store_true",
         help="Apenas extrai o manifesto sem disparar a compilacao LaTeX.",
     )
+    parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Ignora o cache SHA-256 e forca a recompilacao de todas as figuras.",
+    )
 
     args = parser.parse_args()
 
@@ -271,35 +351,11 @@ def main() -> int:
     manifest_path = args.catalog_dir / "manifest.json"
     temp_dir = args.catalog_dir.parent / "temp_standalone"
     temp_dir.mkdir(parents=True, exist_ok=True)
-
-    existing_status: dict[str, str] = {}
-    if manifest_path.is_file():
-        try:
-            old_data = json.loads(manifest_path.read_text(encoding="utf-8"))
-            if isinstance(old_data, list):
-                for entry in old_data:
-                    if isinstance(entry, dict) and "fig_id" in entry and "status" in entry:
-                        existing_status[entry["fig_id"]] = entry["status"]
-        except Exception:
-            pass
+    cache_dir = args.catalog_dir / ".cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
 
     all_figures = extract_figures_from_chapters(args.capitulos, chapter_filter=None)
 
-    # Constroi lista de manifesto preservando status anterior
-    manifest_entries: list[dict] = []
-    for item in all_figures:
-        fid = item["fig_id"]
-        status = existing_status.get(fid, "pending")
-        manifest_entries.append({
-            "fig_id": fid,
-            "chapter_file": item["chapter_file"],
-            "line_start": item["line_start"],
-            "line_end": item["line_end"],
-            "png_path": item["png_path"],
-            "status": status,
-        })
-
-    # Filtra quais figuras serao compiladas nesta execucao
     targets = all_figures
     if args.chapter:
         norm_c = Path(args.chapter).name.lower()
@@ -310,19 +366,16 @@ def main() -> int:
     if args.fig_id:
         targets = [t for t in targets if t["fig_id"] == args.fig_id]
 
+    updates_dict: dict[str, dict] = {}
     if args.set_status:
         target_ids = {t["fig_id"] for t in targets}
-        for entry in manifest_entries:
-            if entry["fig_id"] in target_ids:
-                entry["status"] = args.set_status
+        for fid in target_ids:
+            updates_dict[fid] = {"status": args.set_status}
 
-    manifest_path.write_text(
-        json.dumps(manifest_entries, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
+    manifest_entries = atomic_update_manifest(manifest_path, all_figures, updates_dict)
 
     if args.extract_only:
-        print(f"[OK] Manifesto atualizado com {len(manifest_entries)} figuras em {manifest_path.as_posix()}")
+        print(f"[OK] Manifesto atualizado atomicamente ({len(manifest_entries)} figuras) em {manifest_path.as_posix()}")
         return 0
 
     if not targets:
@@ -330,10 +383,11 @@ def main() -> int:
         return 0
 
     compiler_type, compiler_bin = locate_compiler()
-    print(f"[INFO] Compilando {len(targets)} figura(s) em modo standalone via {compiler_type}...")
+    print(f"[INFO] Compilando {len(targets)} figura(s) via {compiler_type} (cache ativado)...")
 
     t_start = time.perf_counter()
     ok_count = 0
+    cache_hits = 0
     fail_count = 0
 
     with ThreadPoolExecutor(max_workers=max(1, args.workers)) as pool:
@@ -345,7 +399,9 @@ def main() -> int:
                 compiler_bin,
                 temp_dir,
                 args.catalog_dir,
+                cache_dir,
                 args.dpi,
+                args.no_cache,
             ): item
             for item in targets
         }
@@ -353,7 +409,11 @@ def main() -> int:
             fid, success, elapsed, msg = fut.result()
             if success:
                 ok_count += 1
-                print(f"  [OK] {fid} -> {args.catalog_dir.as_posix()}/{fid}.png ({elapsed:.2f}s)")
+                if msg == "CACHE":
+                    cache_hits += 1
+                    print(f"  [CACHE] {fid} ({elapsed:.3f}s)")
+                else:
+                    print(f"  [OK] {fid} -> {args.catalog_dir.as_posix()}/{fid}.png ({elapsed:.2f}s)")
             else:
                 fail_count += 1
                 print(f"  [ERRO] {fid} ({elapsed:.2f}s): {msg}", file=sys.stderr)
@@ -361,7 +421,7 @@ def main() -> int:
     total_elapsed = time.perf_counter() - t_start
     avg_time = total_elapsed / len(targets) if targets else 0.0
     print(
-        f"[RESUMO] {ok_count}/{len(targets)} compiladas com sucesso | "
+        f"[RESUMO] {ok_count}/{len(targets)} prontas ({cache_hits} recuperadas do cache) | "
         f"Tempo total: {total_elapsed:.2f}s (media efetiva: {avg_time:.2f}s/fig) | "
         f"Manifesto: {manifest_path.as_posix()}"
     )

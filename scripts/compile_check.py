@@ -1,24 +1,21 @@
 #!/usr/bin/env python3
 """
-compile_check.py — Compilador e verificador visual de fechamento de lote (Self-Healing).
+compile_check.py — Compilador e verificador de fechamento de lote e capítulos.
 
 Responsabilidades:
-1. Localizar o binário `tectonic` (em ./bin/ ou no PATH) ou fazer fallback para `latexmk`.
-2. Compilar `main.tex` gerando o PDF em `build/main.pdf`.
-3. Em caso de falha (exit code != 0), exibir as últimas 40 linhas do log de erro
-   e encerrar com código 1 para que o agente corrija a sintaxe LaTeX em loop.
-4. Em caso de sucesso (exit code == 0), renderizar as últimas N páginas compiladas
-   em `build/compiled_preview/comp_page_XXX.png` para revisão visual do agente.
+1. Localizar o binário `tectonic` (em ./bin/ ou no PATH) ou fazer fallback para `latexmk`/`pdflatex`.
+2. Compilar `main.tex` (ou versão parcial via `--only capXX`) gerando o PDF em `build/`.
+3. Em caso de falha (exit code != 0), exibir as últimas 40 linhas do log de erro.
+4. Renderização de páginas sob demanda via `--render-last N` (padrão: 0, desativado).
+5. Despacho semântico para a raiz apenas quando compilando o livro completo com sucesso.
 """
 
 import argparse
-import json
 import platform
 import re
 import shutil
 import subprocess
 import sys
-import unicodedata
 from pathlib import Path
 
 WORKSPACE_ROOT = Path(__file__).resolve().parent.parent
@@ -77,11 +74,17 @@ def render_last_compiled_pages(
     pdf_path: Path, preview_dir: Path, count: int, dpi: int = 160
 ) -> list[Path]:
     """Renderiza as últimas `count` páginas do PDF compilado em PNG."""
+    if count <= 0:
+        return []
+
     try:
-        import fitz
+        try:
+            import pymupdf as fitz
+        except ImportError:
+            import fitz
     except ImportError:
         print(
-            "[AVISO] PyMuPDF (fitz) ausente; pulando renderização de preview.",
+            "[AVISO] PyMuPDF ausente; pulando renderização de preview.",
             file=sys.stderr,
         )
         return []
@@ -91,7 +94,7 @@ def render_last_compiled_pages(
 
     with fitz.open(pdf_path) as doc:
         total = len(doc)
-        if total == 0 or count <= 0:
+        if total == 0:
             return []
         start_page = max(1, total - count + 1)
         for page_num in range(start_page, total + 1):
@@ -122,76 +125,82 @@ def extract_error_tail(stdout_text: str, stderr_text: str, log_file: Path, max_l
     return "\n".join(tail)
 
 
+def dispatch_to_root(compiled_pdf: Path) -> Path | None:
+    """Copia o PDF compilado para a raiz com o nome semântico da obra."""
+    import json
 
-
-def _sanitize_filename(text: str) -> str:
-    """Remove acentos, comandos LaTeX e caracteres invalidos para nomes de arquivo."""
-    # Remove comandos LaTeX comuns (ex: \textbf, \textit, \small, etc.)
-    text = re.sub(r"\\[a-zA-Z]+", "", text)
-    text = re.sub(r"[{}\\]", "", text)
-    text = unicodedata.normalize("NFKD", text).encode("ASCII", "ignore").decode("ASCII")
-    text = re.sub(r"[^a-zA-Z0-9]+", "_", text).strip("_")
-    return text
-
-
-def dispatch_semantic_pdf(compiled_pdf: Path, main_tex: Path) -> Path | None:
-    """Copia o PDF compilado para a raiz com nome limpo baseado no titulo e autor."""
-    title = ""
+    roadmap_path = WORKSPACE_ROOT / "roadmap.json"
+    title = "Livro"
+    source_pdf = ""
     author = ""
-    
-    # 1. Tenta obter de roadmap.json se presente
-    workspace_dir = main_tex.resolve().parent
-    roadmap_path = workspace_dir / "roadmap.json"
-    source_pdf_name = ""
+
     if roadmap_path.is_file():
         try:
-            data = json.loads(roadmap_path.read_text(encoding="utf-8"))
-            title = data.get("book_title", "")
-            author = data.get("author", "")
-            source_pdf_name = Path(data.get("source_pdf", "")).name
+            with open(roadmap_path, encoding="utf-8") as f:
+                data = json.load(f)
+                title = data.get("book_title", title)
+                source_pdf = data.get("source_pdf", "")
         except Exception:
             pass
 
-    # 2. Tenta extrair de main.tex se faltar algo
-    if (not title or not author) and main_tex.is_file():
+    context_path = WORKSPACE_ROOT / "CONTEXT.md"
+    if context_path.is_file():
         try:
-            for line in main_tex.read_text(encoding="utf-8", errors="replace").splitlines():
-                stripped = line.strip()
-                if not title and stripped.startswith(r"\title"):
-                    t_val = stripped[len(r"\title"):].strip()
-                    if t_val.startswith("{") and t_val.endswith("}"):
-                        t_val = t_val[1:-1]
-                    title = t_val.split(r"\\")[0].strip()
-                if not author and stripped.startswith(r"\author"):
-                    a_val = stripped[len(r"\author"):].strip()
-                    if a_val.startswith("{") and a_val.endswith("}"):
-                        a_val = a_val[1:-1]
-                    author = a_val.split(r"\\")[0].strip()
+            for line in context_path.read_text(encoding="utf-8", errors="replace").splitlines():
+                if "Autores:" in line or "Autor:" in line:
+                    author = line.split(":", 1)[1].strip()
+                    author = re.sub(r"\(.*?\)", "", author).strip()
+                    break
         except Exception:
             pass
 
-    clean_title = _sanitize_filename(title)
-    clean_author = _sanitize_filename(author)
+    def sanitize(s: str) -> str:
+        s = re.sub(r'[\\/*?:"<>|]', "", s)
+        return s.strip().replace(" ", "_")
 
-    if clean_title and clean_author:
-        dest_name = f"{clean_title}_{clean_author}.pdf"
-    elif clean_title:
-        dest_name = f"{clean_title}.pdf"
-    else:
-        dest_name = f"{main_tex.stem}_completo.pdf"
+    s_title = sanitize(title)
+    s_author = sanitize(author) if author else ""
+    target_name = f"{s_title}_{s_author}.pdf" if s_author else f"{s_title}.pdf"
+    target_path = WORKSPACE_ROOT / target_name
 
-    # Previne colisao com o PDF escaneado original
-    if source_pdf_name and dest_name.lower() == source_pdf_name.lower():
-        dest_name = f"{Path(dest_name).stem}_Recuperado.pdf"
+    source_stem = Path(source_pdf).stem.lower() if source_pdf else ""
+    if target_path.name.lower() == source_pdf.lower() or (source_stem and source_stem in target_path.stem.lower()):
+        target_name = f"{target_path.stem}_Recuperado.pdf"
+        target_path = WORKSPACE_ROOT / target_name
 
-    dest_path = workspace_dir / dest_name
     try:
-        shutil.copy2(compiled_pdf, dest_path)
-        print(f"[OK] PDF final despachado para a raiz: {dest_path.name}")
-        return dest_path
+        shutil.copy2(compiled_pdf, target_path)
+        print(f"[OK] Despacho semântico concluído: {target_path.name}")
+        return target_path
     except Exception as exc:
-        print(f"[AVISO] Nao foi possivel copiar PDF para a raiz: {exc}", file=sys.stderr)
+        print(f"[AVISO] Falha no despacho semântico para a raiz: {exc}", file=sys.stderr)
         return None
+
+
+def prepare_includeonly_wrapper(main_tex: Path, outdir: Path, chapter_target: str) -> Path:
+    """Gera um arquivo wrapper temporário com \\includeonly para compilação atômica de capítulo."""
+    content = main_tex.read_text(encoding="utf-8", errors="replace")
+
+    clean_target = chapter_target.replace("\\", "/").strip()
+    if clean_target.endswith(".tex"):
+        clean_target = clean_target[:-4]
+    if not clean_target.startswith("capitulos/"):
+        matching = list((WORKSPACE_ROOT / "capitulos").glob(f"{clean_target}*.tex"))
+        if matching:
+            clean_target = f"capitulos/{matching[0].stem}"
+        else:
+            clean_target = f"capitulos/{clean_target}"
+
+    includeonly_directive = f"\\includeonly{{{clean_target}}}\n"
+
+    if "\\begin{document}" in content:
+        new_content = content.replace("\\begin{document}", f"{includeonly_directive}\\begin{document}")
+    else:
+        new_content = f"{includeonly_directive}{content}"
+
+    wrapper_path = outdir / f"main_only_{Path(clean_target).stem}.tex"
+    wrapper_path.write_text(new_content, encoding="utf-8")
+    return wrapper_path
 
 
 def main() -> int:
@@ -201,7 +210,7 @@ def main() -> int:
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
     parser = argparse.ArgumentParser(
-        description="Compila main.tex via Tectonic (ou latexmk) e renderiza páginas compiladas para inspeção."
+        description="Compila main.tex via Tectonic (ou latexmk) com suporte a compilação atômica por capítulo."
     )
     parser.add_argument(
         "--main",
@@ -216,10 +225,21 @@ def main() -> int:
         help="Diretório de saída da compilação (padrão: build).",
     )
     parser.add_argument(
+        "--only",
+        type=str,
+        default=None,
+        help="Compila exclusivamente o capítulo especificado via \\includeonly (ex.: cap02 ou capitulos/cap02_como_surgiram_as_ideias).",
+    )
+    parser.add_argument(
         "--render-last",
         type=int,
-        default=5,
-        help="Quantidade de páginas finais do PDF compilado para converter em PNG (padrão: 5).",
+        default=0,
+        help="Quantidade de páginas finais do PDF compilado para converter em PNG (padrão: 0, desativado).",
+    )
+    parser.add_argument(
+        "--dispatch",
+        action="store_true",
+        help="Força o despacho semântico para a raiz mesmo em compilações parciais.",
     )
 
     args = parser.parse_args()
@@ -229,19 +249,25 @@ def main() -> int:
         return 1
 
     args.outdir.mkdir(parents=True, exist_ok=True)
-    # Garante também que o subdiretório build/capitulos exista para arquivos .aux de \include
     (args.outdir / "capitulos").mkdir(parents=True, exist_ok=True)
 
+    target_tex = args.main
+    is_partial = bool(args.only)
+
+    if is_partial:
+        target_tex = prepare_includeonly_wrapper(args.main, args.outdir, args.only)
+        print(f"[INFO] Modo atômico ativado: compilando apenas '{args.only}' via wrapper {target_tex.name}...")
+
     try:
-        compiler_name, cmd = resolve_compiler(args.main, args.outdir)
+        compiler_name, cmd = resolve_compiler(target_tex, args.outdir)
     except RuntimeError as exc:
         print(f"[ERRO] {exc}", file=sys.stderr)
         return 1
 
-    print(f"[INFO] Compilando '{args.main}' com {compiler_name}...")
+    print(f"[INFO] Compilando '{target_tex}' com {compiler_name}...")
     proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
 
-    stem = args.main.stem
+    stem = target_tex.stem
     log_file = args.outdir / f"{stem}.log"
     compiled_pdf = args.outdir / f"{stem}.pdf"
 
@@ -258,18 +284,20 @@ def main() -> int:
 
     print(f"[OK] Compilação concluída com sucesso: {compiled_pdf.as_posix()}")
 
-    dispatch_semantic_pdf(compiled_pdf, args.main)
+    if not is_partial or args.dispatch:
+        dispatch_to_root(compiled_pdf)
 
-    preview_dir = args.outdir / "compiled_preview"
-    previews = render_last_compiled_pages(
-        pdf_path=compiled_pdf,
-        preview_dir=preview_dir,
-        count=args.render_last,
-    )
-    if previews:
-        print(f"[OK] {len(previews)} página(s) renderizada(s) para revisão visual:")
-        for p in previews:
-            print(p.as_posix())
+    if args.render_last > 0:
+        preview_dir = args.outdir / "compiled_preview"
+        previews = render_last_compiled_pages(
+            pdf_path=compiled_pdf,
+            preview_dir=preview_dir,
+            count=args.render_last,
+        )
+        if previews:
+            print(f"[OK] {len(previews)} página(s) renderizada(s) para revisão visual:")
+            for p in previews:
+                print(p.as_posix())
 
     return 0
 
