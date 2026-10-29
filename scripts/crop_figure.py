@@ -82,6 +82,48 @@ def crop_and_clean_figure(
     return out_path
 
 
+def list_page_boxes(pdf_path: Path, page_num: int) -> list[tuple[str, tuple[float, float, float, float]]]:
+    """Devolve as caixas normalizadas (x0,y0,x1,y1) de imagens e desenhos vetoriais da página (base 1)."""
+    try:
+        try:
+            import pymupdf as fitz
+        except ImportError:
+            import fitz
+    except ImportError:
+        print("[ERRO] PyMuPDF não está instalado.", file=sys.stderr)
+        sys.exit(1)
+
+    if not pdf_path.is_file():
+        raise FileNotFoundError(f"Arquivo PDF não encontrado: {pdf_path}")
+
+    with fitz.open(pdf_path) as doc:
+        if not 1 <= page_num <= len(doc):
+            raise ValueError(f"--page deve estar entre 1 e {len(doc)} (recebido: {page_num})")
+        page = doc.load_page(page_num - 1)
+        w, h = page.rect.width, page.rect.height
+        found: list[tuple[str, fitz.Rect]] = []
+        for info in page.get_image_info():
+            found.append(("imagem", fitz.Rect(info["bbox"])))
+        try:
+            for rect in page.cluster_drawings():
+                found.append(("desenho", fitz.Rect(rect)))
+        except Exception:
+            pass
+
+    boxes = []
+    for kind, r in found:
+        r = r & fitz.Rect(0, 0, w, h)
+        if r.is_empty or r.width < 24 or r.height < 24:
+            continue
+        boxes.append((kind, (
+            round(max(0.0, r.x0 / w), 3),
+            round(max(0.0, r.y0 / h), 3),
+            round(min(1.0, r.x1 / w), 3),
+            round(min(1.0, r.y1 / h), 3),
+        )))
+    return boxes
+
+
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -92,20 +134,24 @@ def main() -> int:
         description="Recorta e limpa figuras de páginas escaneadas usando coordenadas relativas [0.0, 1.0]."
     )
     parser.add_argument(
+        "--list-boxes",
+        action="store_true",
+        help="Lista as caixas de imagens/desenhos de uma página do PDF (usa --pdf e --page) e sai.",
+    )
+    parser.add_argument("--pdf", type=Path, help="PDF de origem (somente com --list-boxes).")
+    parser.add_argument("--page", type=int, help="Página do PDF, base 1 (somente com --list-boxes).")
+    parser.add_argument(
         "--image",
-        required=True,
         type=Path,
         help="Caminho da imagem PNG da página (ex.: build/temp_pages/page_010.png).",
     )
     parser.add_argument(
         "--bbox",
-        required=True,
         type=str,
         help="Coordenadas relativas 'x0,y0,x1,y1' no intervalo de 0.0 a 1.0.",
     )
     parser.add_argument(
         "--out",
-        required=True,
         type=Path,
         help="Caminho do arquivo PNG de saída (ex.: figuras/fig_1_1.png).",
     )
@@ -117,6 +163,24 @@ def main() -> int:
     )
 
     args = parser.parse_args()
+
+    if args.list_boxes:
+        if not args.pdf or not args.page:
+            parser.error("--list-boxes exige --pdf e --page")
+        try:
+            boxes = list_page_boxes(args.pdf, args.page)
+        except Exception as exc:
+            print(f"[ERRO] {exc}", file=sys.stderr)
+            return 1
+        if not boxes:
+            print("[AVISO] Nenhuma imagem ou desenho encontrado (página escaneada inteira? use --bbox manual).")
+            return 0
+        for kind, (x0, y0, x1, y1) in boxes:
+            print(f"{kind}: --bbox {x0},{y0},{x1},{y1}")
+        return 0
+
+    if not (args.image and args.bbox and args.out):
+        parser.error("--image, --bbox e --out são obrigatórios (ou use --list-boxes)")
 
     try:
         bbox = parse_bbox(args.bbox)

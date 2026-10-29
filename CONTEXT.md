@@ -1,38 +1,29 @@
 # CONTEXT.md: Quadro de Bordo e Rastreabilidade (`book-resurrect`)
 
 ## 1. Metadados e Propósito do Projeto
-- **Objetivo:** Engenharia reversa editorial, tradução e recuperação acessível de livros escaneados (PDF) para formato vetorial compilável (LaTeX/TikZ) ou texto estruturado (Markdown/EPUB) via IA multimodal, servindo de base metodológica para TCC e projetos acadêmicos.
+- **Objetivo:** Engenharia reversa editorial, tradução e recuperação acessível de livros escaneados (PDF) para um único pipeline em LaTeX compilado em PDF pelo Tectonic, com suporte aos perfis `tecnico` (exatas/TikZ) e `texto` (humanas/texto corrido).
 - **Repositório:** `book-resurrect`
-- **Natureza deste workspace:** framework/motor universal. O livro de cálculo processado antes foi o caso piloto que validou a esteira (MiKTeX, TikZ e scripts). Os arquivos do livro piloto (`roadmap.json`, `progress.json`, `capitulos/`) não fazem parte deste repositório.
+- **Natureza deste workspace:** framework/motor universal limpo. Nenhum livro de estudo de caso deve permanecer dentro desta pasta.
 
 ## 2. Regra de Governança de Estado (Obrigatória para Agentes)
-- **Leitura no Início do Turno:** Antes de executar qualquer comando ou responder ao usuário, leia `CONTEXT.md` (visão macro e backlog de arquitetura). Se existirem, leia também `roadmap.json` e `progress.json` (estado micro dos lotes de páginas).
-- **Escrita no Fim do Turno:** Antes de encerrar o turno após concluir uma entrega ou lote, atualize a seção "Status Atual", o "Próximo Passo Imediato" e os checkboxes do "Backlog Priorizado" neste arquivo.
+- **Leitura no Início do Turno:** Antes de executar qualquer comando, leia `CONTEXT.md` (e, em pastas de livros, `metadata.yaml`, `roadmap.json` e `progress.json`).
+- **Escrita no Fim do Turno:** Ao concluir uma evolução estrutural ou lote, atualize o status correspondente.
 
 ## 3. Status Atual (Construído e Validado)
-- [x] Scripts utilitários presentes em `scripts/`: `setup_env.py`, `slice_pdf.py`, `crop_figure.py`, `compile_check.py`. Validados no caso piloto (compilação local com MiKTeX e Tectonic, `exit code 0`).
-- [x] Templates presentes em `templates/`: `main.tex` e `preambulo.tex` (caixas `tcolorbox`: `definicao`, `teorema`, `exemplo`, `caixaformulas`). Validados no caso piloto.
-- [x] Skill canônica em `.agent/skills/book-resurrect/SKILL.md` com Fases 0, 1 e 2.
-- [x] Adaptadores multi-IDE: `.cursor/`, `CLAUDE.md`, `.windsurfrules`, `.github/`.
-- [x] Triagem Interativa e Protocolo de Tradução/Modernização integrados ao SKILL.md.
-- [x] Fluxo de Humanas (Markdown/EPUB) e templates/metadata.yaml criados.
-- [x] Provisionador global scripts/init_book.py implementado e operacional.
-- [x] Instrução de build EPUB via Pandoc formalizada.
-- [x] FASE 3 (Modo Esquadrão Paralelo: Operário/Maestro) integrada ao SKILL.md local e às pastas globais.
-- [x] FASE 3 (Modo Zero-Touch com Pool de Subagentes e Reactive Wakeup) implementada e sincronizada globalmente.
-- [x] Pre-processador split_double_pages.py e deteccao automatica de folha dupla integrados a Fase 0 do SKILL.md.
+- [x] Pipeline unificado 100% em LaTeX (Tectonic) com saída exclusiva em PDF.
+- [x] Preâmbulo modularizado em `templates/preambulo_base.tex`, `templates/perfil_tecnico.tex` e `templates/perfil_texto.tex`.
+- [x] Abertura canônica universal nas páginas 1 a 4 (`\inserircapa`, `\folhaderosto`, `\manifestoeditorial` com `assets/logo-blue.png` e `\tableofcontents`).
+- [x] Descarte obrigatório de pré-textuais comerciais anteriores ao sumário e proibição de transcrever o sumário impresso.
+- [x] Fase 0 determinística em `scripts/init_book_fase0.py` (< 3s) com split automático de folha dupla via PyMuPDF e extração de `capa.png`.
+- [x] Compilador único `scripts/compile_check.py` com linter editorial estático (`--lint`) e compilação atômica (`--only`).
+- [x] Fase 4 para o perfil `tecnico` com `scripts/render_isolated_figures.py` (cache SHA-256 e lock de manifesto) e `scripts/audit_and_fix_tikz.py` (transparência 100% natural, sem `fill=white`).
+- [x] Sincronizador `instalar_skills.py` com carregamento dinâmico dos arquivos do repositório.
 
 ## 4. Próximo Passo Imediato (Foco Ativo)
-- [x] Arquitetura v2.0 do motor concluída. Framework pronto para processamento de novos livros ou push remoto.
+- [x] Motor unificado em LaTeX concluído e pronto para validação em estudos de caso externos.
 
-## 5. Backlog Priorizado e Critérios de Aceite
-- [x] **Etapa 1: Triagem Interativa.** Questionário pré-Fase 0 no `SKILL.md` com 3 decisões: (1) Exatas/LaTeX vs. Humanas/Markdown; (2) Transcrição Fiel vs. Tradução vs. Modernização de linguagem arcaica; (3) Figuras Híbridas (TikZ + recorte) vs. 100% recorte tratado.
-- [x] **Etapa 2: Tradução e Modernização Semântica.** Regras de tradução simultânea e atualização lexical no `SKILL.md`, preservando rigorosamente a notação matemática e as variáveis originais.
-- [x] **Etapa 3: Suporte a Humanas/Markdown.** Fluxo de saída em Markdown/EPUB para livros sem notação matemática, com regras próprias de estrutura, notas e figuras.
-- [x] **Etapa 4: Scaffolding Global.** A skill provisiona a estrutura de pastas (`capitulos/`, `figuras/`, `build/`, `scripts/`, `templates/`) ao receber um caminho de PDF em qualquer diretório.
-
-## 6. Protocolo de Validação em Escala Menor (Definition of Done)
-Nenhuma tarefa ou lote pode ser marcado como `[x]` sem cumprir os 3 critérios verificáveis abaixo:
-1. **Verificação Sintática:** Equilíbrio exato de chaves `{}` e fechamento de todos os blocos `\begin{...}` / `\end{...}` nos arquivos `.tex` alterados.
-2. **Compilação Limpa:** Execução de `pdflatex` ou `python scripts/compile_check.py` retornando `exit code 0` e gerando o PDF atualizado.
-3. **Inspeção Visual por Amostragem:** Renderização das páginas recém-compiladas em PNG e inspeção visual confirmando ausência de equações cortadas (*overfull hbox*) ou sobreposição em diagramas TikZ.
+## 5. Protocolo de Validação (Definition of Done)
+Nenhum lote ou livro pode ser considerado concluído sem cumprir:
+1. **Lint Editorial Limpo:** `python scripts/compile_check.py --lint-only` sem alertas de escape (`%`, `&`, `#`, `_`), sem `\chapter` duplicado, sem número manual no título e sem macros proibidas no perfil.
+2. **Compilação Limpa:** `python scripts/compile_check.py --lint` retornando `exit code 0` e gerando o PDF final.
+3. **Inspeção Visual Página a Página:** Capa na pág. 1, Folha de Rosto com chancela na pág. 2, Manifesto com logo na pág. 3, Sumário automático clicável na pág. 4 e capítulos íntegros.

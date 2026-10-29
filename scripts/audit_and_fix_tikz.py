@@ -210,7 +210,7 @@ def desobstruir_geometria_especifica(content: str, filename: str) -> tuple[str, 
     return content, modificacoes
 
 
-def processar_capitulos(capitulos_dir: Path) -> dict:
+def processar_capitulos(capitulos_dir: Path, regras_piloto: bool = False) -> dict:
     """Varre todos os capitulos .tex, higienizando figuras e TikZ."""
     stats = {
         "arquivos_processados": 0,
@@ -234,8 +234,9 @@ def processar_capitulos(capitulos_dir: Path) -> dict:
         stats["figuras_normalizadas"] += n_norm
 
         # 2. Desobstrucao geometrica especifica
-        modificado, n_geo = desobstruir_geometria_especifica(modificado, tex_path.name)
-        stats["ajustes_geometricos"] += n_geo
+        if regras_piloto:
+            modificado, n_geo = desobstruir_geometria_especifica(modificado, tex_path.name)
+            stats["ajustes_geometricos"] += n_geo
 
         # 3. Remover fundos opacos espurios em blocos tikzpicture
         pattern_tikz = re.compile(r"(\\begin\{tikzpicture\}(?:\[.*?\])?)(.*?)(\\end\{tikzpicture\})", re.DOTALL)
@@ -379,6 +380,12 @@ def main():
         help="Pular a etapa de renderizacao PNG do PDF"
     )
 
+    parser.add_argument(
+        "--regras-piloto",
+        action="store_true",
+        help="Aplica as correcoes literais do livro piloto (Licoes de Calculo, cap02). Nao use em outros livros."
+    )
+
     args = parser.parse_args()
 
     capitulos_dir = Path(args.capitulos)
@@ -391,7 +398,7 @@ def main():
     print("=================================================================")
 
     # 1. Processar capitulos
-    stats = processar_capitulos(capitulos_dir)
+    stats = processar_capitulos(capitulos_dir, regras_piloto=args.regras_piloto)
     print("\n[RESULTADO DO SANEAMENTO]")
     print(f"- Arquivos analisados: {stats['arquivos_processados']}")
     print(f"- Figuras avulsas normalizadas: {stats['figuras_normalizadas']}")

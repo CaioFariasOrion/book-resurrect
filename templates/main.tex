@@ -1,6 +1,7 @@
 \documentclass[11pt,b5paper,twoside,openright]{book}
 
-\input{preambulo.tex}
+\input{preambulo_base.tex}
+\input{perfil_tecnico.tex}
 
 \title{\textbf{Título do Livro Recuperado}}
 \author{Autor Original}
@@ -8,25 +9,25 @@
 
 \begin{document}
 
-% 1. Pagina 1: Capa (se existir capa.png, capa.jpg ou capa.jpeg na raiz)
-\inserircapa
-
-% 2. Pagina 2: Folha de Rosto centralizada e limpa
-\folhaderosto
-
-% 3. Pagina 3: Ficha Tecnica e Manifesto Institucional
-\manifestoeditorial
-
-% 4. Pagina 4: Sumario sem quebras duplas
 \begingroup
 \let\cleardoublepage\clearpage
+% 1. Pagina 1: Capa (se existir capa.png, capa.jpg ou CAPA.jpg na raiz)
+\inserircapa
+
+% 2. Pagina 2: Folha de Rosto centralizada e limpa com chancela Book Resurrect
+\folhaderosto
+
+% 3. Pagina 3: Ficha Tecnica e Manifesto Institucional com logo
+\manifestoeditorial
+
+% 4. Pagina 4: Sumario automatico sem quebras duplas
 \frontmatter
 \tableofcontents
 \clearpage
 \endgroup
 
 \mainmatter
-% Os capítulos gerados na Fase 0 e transcritos na Fase 1/2 são incluídos abaixo:
+% Os capitulos gerados na Fase 0 e transcritos na Fase 1/2 sao incluidos abaixo:
 % \include{capitulos/cap01}
 % \include{capitulos/cap02}
 

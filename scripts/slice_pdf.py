@@ -18,6 +18,8 @@ def slice_pdf(
     end_page: int,
     out_dir: Path,
     dpi: int = 180,
+    grayscale: bool = False,
+    force: bool = False,
 ) -> list[Path]:
     """Renderiza o intervalo [start_page, end_page] (1-based) do PDF em imagens PNG."""
     try:
@@ -56,9 +58,16 @@ def slice_pdf(
         )
 
         for page_num in range(start_page, actual_end + 1):
-            page = doc.load_page(page_num - 1)
-            pix = page.get_pixmap(dpi=dpi, alpha=False)
             out_file = out_dir / f"page_{page_num:03d}.png"
+            if out_file.is_file() and not force:
+                generated_files.append(out_file)
+                continue
+            page = doc.load_page(page_num - 1)
+            pix = page.get_pixmap(
+                dpi=dpi,
+                alpha=False,
+                colorspace=fitz.csGRAY if grayscale else fitz.csRGB,
+            )
             pix.save(str(out_file))
             generated_files.append(out_file)
 
@@ -105,6 +114,17 @@ def main() -> int:
         help="Resolução em DPI para renderização (padrão: 180).",
     )
 
+    parser.add_argument(
+        "--grayscale",
+        action="store_true",
+        help="Renderiza em tons de cinza (PNG bem menor, bom para texto corrido).",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Renderiza de novo mesmo se a página já existir em --out.",
+    )
+
     args = parser.parse_args()
 
     try:
@@ -114,6 +134,8 @@ def main() -> int:
             end_page=args.end,
             out_dir=args.out,
             dpi=args.dpi,
+            grayscale=args.grayscale,
+            force=args.force,
         )
     except Exception as exc:
         print(f"[ERRO] {exc}", file=sys.stderr)

@@ -1,0 +1,114 @@
+% ==============================================================================
+% perfil_tecnico.tex: Extensão de Preâmbulo para Obras Técnicas e de Exatas
+% Matemática avançada, caixas semânticas (definicao, teorema, exemplo) e TikZ
+% ==============================================================================
+
+\usepackage{amsfonts}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{bm}
+\usepackage{cancel}
+\allowdisplaybreaks[3]
+
+% Operadores matemáticos canônicos em língua portuguesa
+\providecommand{\sen}{\sin}
+\providecommand{\tg}{\tan}
+\providecommand{\cotg}{\cot}
+\providecommand{\cosec}{\csc}
+\providecommand{\arctg}{\arctan}
+\providecommand{\arcsen}{\arcsin}
+\providecommand{\arccos}{\arccos}
+\providecommand{\mdc}{\operatorname{mdc}}
+\providecommand{\mmc}{\operatorname{mmc}}
+\providecommand{\tr}{\operatorname{tr}}
+\providecommand{\posto}{\operatorname{posto}}
+
+% Gráficos Vetoriais (TikZ & pgfplots)
+\usepackage{tikz}
+\usetikzlibrary{
+    arrows.meta,
+    calc,
+    positioning,
+    patterns,
+    angles,
+    quotes,
+    decorations.pathreplacing,
+    shapes.geometric
+}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% Divisória Horizontal Semântica para Exemplos
+\newcommand{\divisorexemplo}{\par\nopagebreak\vspace{2mm}\noindent\rule{\linewidth}{0.4pt}\par\nopagebreak\vspace{2.5mm}}
+
+% Ambiente de Exemplo: Fluxo contínuo no papel branco
+\newenvironment{exemplo}[1]{%
+    \par\addvspace{1.2em}%
+    \noindent\textbf{Exemplo #1.}\enspace\ignorespaces
+}{%
+    \penalty10000\hfill$\triangleleft$\par\addvspace{1.2em}%
+}
+
+% Caixas Semânticas Minimalistas (tcolorbox)
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+
+\newtcolorbox{definicao}[1]{%
+    blanker,
+    breakable,
+    colback=white,
+    left=3.5mm,
+    right=0mm,
+    top=1mm,
+    bottom=1mm,
+    borderline west={1.2pt}{0pt}{azuldef},
+    fonttitle=\bfseries\color{azuldef},
+    title=Definição #1,
+    before skip=10pt,
+    after skip=10pt
+}
+
+\newtcolorbox{teorema}[1]{%
+    blanker,
+    breakable,
+    colback=white,
+    left=3.5mm,
+    right=0mm,
+    top=1mm,
+    bottom=1mm,
+    borderline west={1.2pt}{0pt}{vinhoteo},
+    fonttitle=\bfseries\color{vinhoteo},
+    title={#1},
+    before skip=10pt,
+    after skip=10pt
+}
+
+\newtcolorbox{caixaformulas}[1]{%
+    enhanced,
+    colback=gray!3!white,
+    colframe=black!70,
+    arc=1mm,
+    boxrule=0.7pt,
+    left=8pt,
+    right=8pt,
+    top=6pt,
+    bottom=6pt,
+    fonttitle=\bfseries\color{black},
+    colbacktitle=gray!15!white,
+    title=#1,
+    breakable,
+    before skip=8pt,
+    after skip=8pt
+}
+
+\newenvironment{solucao}{%
+    \par\noindent\textbf{Solução.}\ \ignorespaces
+}{%
+    \hfill$\blacksquare$\par\medskip
+}
+
+\newenvironment{demonstracao}{%
+    \par\noindent\textit{Demonstração.}\ \ignorespaces
+}{%
+    \hfill$\square$\par\medskip
+}

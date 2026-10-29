@@ -1,0 +1,160 @@
+% ==============================================================================
+% preambulo_base.tex: Base Canônica Universal do Pipeline book-resurrect
+% Comum aos perfis 'tecnico' e 'texto' (Papel B5, Tipografia, Abertura e Manifesto)
+% ==============================================================================
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage[autostyle=true]{csquotes}
+
+% --- Geometria da Página (Papel B5 Editorial) ---
+\usepackage{geometry}
+\geometry{
+    paperwidth=160mm,
+    paperheight=230mm,
+    top=22mm,
+    bottom=22mm,
+    inner=24mm,
+    outer=18mm,
+    headheight=14pt
+}
+
+% --- Tipografia e Microtipografia ---
+\usepackage{lmodern}
+\usepackage{microtype}
+\emergencystretch=1.5em
+\setlength{\parskip}{0.4em}
+\setlength{\parindent}{1.25em}
+
+% --- Controle Rigoroso de Paginação, Viúvas e Órfãs ---
+\widowpenalty=10000
+\clubpenalty=10000
+\displaywidowpenalty=10000
+\raggedbottom
+
+% --- Tabelas, Figuras e Listas ---
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+
+% --- Matemática Básica (permitida também para quadros/fórmulas avulsas em humanas) ---
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% --- Cores Sóbrias Editoriais ---
+\usepackage[dvipsnames,table]{xcolor}
+\definecolor{azuldef}{RGB}{26,54,93}
+\definecolor{vinhoteo}{RGB}{114,28,36}
+\definecolor{grafite}{RGB}{40,40,40}
+
+% --- Cabeçalhos e Rodapés (fancyhdr) ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{\thepage}
+\fancyhead[RE]{\nouppercase{\leftmark}}
+\fancyhead[LO]{\nouppercase{\rightmark}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% --- Ancoragem Determinística de Figuras no Fluxo ---
+\makeatletter
+\renewenvironment{figure}[1][]{%
+    \par\addvspace{\intextsep}%
+    \noindent\begin{minipage}{\linewidth}%
+    \def\@captype{figure}%
+    \centering
+}{%
+    \end{minipage}%
+    \par\addvspace{\intextsep}%
+}
+\makeatother
+
+% --- Hiperlinks e Metadados ---
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=azuldef,
+    citecolor=vinhoteo,
+    urlcolor=azuldef,
+    pdfborder={0 0 0}
+}
+
+% --- Página 1: Inserção de Capa em Sangria Total ---
+\newcommand{\inserircapa}{%
+    \IfFileExists{capa.png}{%
+        \newgeometry{margin=0pt}%
+        \thispagestyle{empty}%
+        \noindent\vbox to \textheight{\vss\hbox to \textwidth{\hss\includegraphics[width=\paperwidth,height=\paperheight]{capa.png}\hss}\vss}%
+        \clearpage%
+        \restoregeometry%
+    }{%
+        \IfFileExists{capa.jpg}{%
+            \newgeometry{margin=0pt}%
+            \thispagestyle{empty}%
+            \noindent\vbox to \textheight{\vss\hbox to \textwidth{\hss\includegraphics[width=\paperwidth,height=\paperheight]{capa.jpg}\hss}\vss}%
+            \clearpage%
+            \restoregeometry%
+        }{%
+            \IfFileExists{CAPA.jpg}{%
+                \newgeometry{margin=0pt}%
+                \thispagestyle{empty}%
+                \noindent\vbox to \textheight{\vss\hbox to \textwidth{\hss\includegraphics[width=\paperwidth,height=\paperheight]{CAPA.jpg}\hss}\vss}%
+                \clearpage%
+                \restoregeometry%
+            }{}%
+        }%
+    }%
+}
+
+% --- Página 2: Folha de Rosto e Página 3: Manifesto Editorial ---
+\makeatletter
+\newcommand{\folhaderosto}{%
+    \thispagestyle{empty}%
+    \begin{center}
+        \vspace*{2.5cm}
+        {\huge\bfseries \@title \par}
+        \vspace{1.5cm}
+        {\Large \@author \par}
+        \vfill
+        {\small\scshape Edição Vetorial Recuperada via Book Resurrect\par}
+        \vspace*{1.5cm}
+    \end{center}%
+    \clearpage
+}
+
+\newcommand{\manifestoeditorial}{%
+    \thispagestyle{empty}%
+    \vspace*{\fill}
+    \begin{center}
+        \IfFileExists{assets/logo-blue.png}{%
+            \includegraphics[width=2.2cm, keepaspectratio]{assets/logo-blue.png}\par
+            \vspace{0.5em}%
+        }{}%
+        {\bfseries\large Edição Vetorial Recuperada via Book Resurrect\par}
+    \end{center}
+    \vspace{0.8em}
+    \noindent
+    Esta obra integra o acervo digital do projeto \textbf{Book Resurrect}, cuja missão é resgatar, preservar e democratizar o patrimônio científico, literário e cultural por meio da restauração digital de obras legadas. O projeto reconstrói textos integrais, notação tipográfica canônica e elementos visuais de alta precisão, alinhados aos padrões editoriais de excelência acadêmica.
+    
+    \vspace{1.2em}
+    \noindent
+    \textbf{Acesso Aberto e Finalidade Educacional:}\par\smallskip
+    \noindent
+    Este é um projeto educacional de acesso aberto voltado ao estudo, pesquisa e disseminação do conhecimento. A reprodução destina-se a fins didáticos e de preservação da memória bibliográfica.
+    
+    \vspace{1.5em}
+    \noindent
+    \textbf{Repositório Oficial:}\par\smallskip
+    \noindent
+    \url{https://github.com/CaioFariasOrion/book-resurrect}
+    \vspace*{\fill}
+    \clearpage
+}
+\makeatother

@@ -1,8 +1,9 @@
 ---
 title: "Título da Obra"
 author: "Autor Original"
-rights: "Domínio Público / Tradução e Edição book-resurrect"
-language: pt-BR
-toc: true
-toc-depth: 2
+profile: "tecnico"
+translation_mode: "fiel"
+figure_mode: "hibrido"
+editorial_profile: "reconstrucao_sbm"
+language: "pt-BR"
 ---

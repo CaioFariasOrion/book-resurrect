@@ -362,6 +362,36 @@ def install_file(target_path: Path, content: str) -> tuple[bool, int]:
     byte_count = target_path.stat().st_size
     return existed, byte_count
 
+def load_workspace_files_from_repo() -> int:
+    """Troca as strings embutidas pelos arquivos reais do repositorio (scripts, templates, skill e adaptadores),
+    para o instalador nunca sobrescrever com versoes defasadas. Devolve quantos arquivos foram lidos."""
+    repo = Path(__file__).resolve().parent
+    patterns = [
+        ("scripts", "*.py"),
+        ("templates", "*"),
+        (".agent/skills/book-resurrect", "SKILL.md"),
+        (".cursor/rules", "*.mdc"),
+        (".github", "copilot-instructions.md"),
+        (".", "CLAUDE.md"),
+        (".", ".windsurfrules"),
+    ]
+    count = 0
+    for folder, pattern in patterns:
+        base = repo / folder
+        if not base.is_dir():
+            continue
+        for f in sorted(base.glob(pattern)):
+            if f.is_file():
+                rel = f.relative_to(repo).as_posix()
+                WORKSPACE_FILES[rel] = f.read_text(encoding="utf-8").replace("\r\n", "\n")
+                count += 1
+    skill_md = repo / ".agent/skills/book-resurrect/SKILL.md"
+    if skill_md.is_file():
+        GLOBAL_SKILLS["skills/book-resurrect/SKILL.md"] = skill_md.read_text(encoding="utf-8").replace("\r\n", "\n")
+    if "scripts/split_double_pages.py" in WORKSPACE_FILES:
+        del WORKSPACE_FILES["scripts/split_double_pages.py"]
+    return count
+
 def run_installation(install_global: bool, install_workspace: bool, mirror_agent: bool, workspace_dir: Path) -> int:
     report = []
     total_bytes = 0
@@ -466,6 +496,7 @@ def main() -> int:
     
     args = parser.parse_args()
     
+    load_workspace_files_from_repo()
     install_global = not args.workspace_only
     install_workspace = not args.global_only
     mirror_agent = not args.no_mirror

@@ -36,14 +36,15 @@ CONTEXT_TEMPLATE = """# CONTEXT.md: Quadro de Bordo do Livro (`{pdf_name}`)
 - [ ] Executar a Triagem Interativa (Pré-Fase 0) do `SKILL.md` para `{pdf_name}`.
 
 ## 5. Backlog Priorizado e Critérios de Aceite
-- [ ] **Triagem Interativa:** responder as 3 perguntas e gravar `project_mode`, `translation_mode` e `figure_mode` no `roadmap.json`.
-- [ ] **Fase 0:** `python scripts/setup_env.py`, mapeamento do sumário e geração de `roadmap.json` e `progress.json`.
+- [ ] **Triagem Interativa:** responder as 4 perguntas e passar as respostas ao `init_book_fase0.py`.
+- [ ] **Fase 0:** `python scripts/init_book_fase0.py ... --pre-render` gera `roadmap.json`, `progress.json` e os esqueletos de capítulos.
 - [ ] **Fases 1 e 2:** transcrição lote a lote, com validação de fechamento a cada lote.
 
 ## 6. Protocolo de Validação em Escala Menor (Definition of Done)
-Nenhum lote pode ser marcado como concluído sem cumprir os critérios do modo escolhido na triagem:
-1. **Modo LaTeX:** chaves `{{}}` balanceadas, `python scripts/compile_check.py` com `exit code 0` e inspeção visual das páginas compiladas.
-2. **Modo Markdown:** sintaxe Markdown válida (notas `[^n]` com definição) e todos os caminhos `figuras/...` existentes.
+Nenhum lote pode ser marcado como concluído sem cumprir os critérios do pipeline único LaTeX:
+1. **Lint Editorial:** `python scripts/compile_check.py --lint-only --only capXX` sem alertas de escape, numeração manual de capítulo ou macro fora do perfil (`metadata.yaml`).
+2. **Compilação Limpa:** `python scripts/compile_check.py --lint --only capXX` com `exit code 0`.
+3. **Fechamento da Obra:** `python scripts/compile_check.py --lint --render-last 5` gerando o PDF com Capa (pág. 1), Folha de Rosto (pág. 2), Manifesto com logo (pág. 3) e Sumário clicável (pág. 4).
 """
 
 

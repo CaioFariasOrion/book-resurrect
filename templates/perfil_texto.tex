@@ -1,0 +1,16 @@
+% ==============================================================================
+% perfil_texto.tex: Extensão Mínima de Preâmbulo para Obras de Humanas e Texto
+% Sem ambientes de teorema e sem TikZ; preserva citações, epígrafes e figuras
+% ==============================================================================
+
+% Ambiente de epígrafe / citação destacada de abertura de capítulo
+\newenvironment{epigrafe}{%
+    \par\vspace{0.5em}%
+    \begin{flushright}%
+    \begin{minipage}{0.78\linewidth}%
+    \itshape\small
+}{%
+    \end{minipage}%
+    \end{flushright}%
+    \par\vspace{1em}%
+}

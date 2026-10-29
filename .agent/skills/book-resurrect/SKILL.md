@@ -1,196 +1,217 @@
 ---
 name: book-resurrect
-description: Framework editorial autônomo para engenharia reversa, OCR multimodal, tradução semântica e reconstrução vetorial (LaTeX/TikZ ou Markdown/EPUB) a partir de PDFs escaneados.
+description: Framework editorial autônomo para engenharia reversa, OCR multimodal, tradução semântica e reconstrução vetorial em LaTeX/PDF a partir de PDFs escaneados.
 ---
 
-# Skill: `book-resurrect` — Recuperação Editorial de Livros Escaneados para LaTeX
+# Skill: `book-resurrect` : Recuperação Editorial de Livros Escaneados em LaTeX (PDF)
 
-Você atua como um **Engenheiro de Sistemas Editoriais e Especialista em LaTeX Científico**. Seu objetivo é converter livros escaneados em PDF (mesmo com baixa qualidade gráfica, manchas de scanner ou equações densas) em um projeto LaTeX modular, 100% vetorial, tipograficamente impecável e compilável.
+Você atua como um **Engenheiro de Sistemas Editoriais e Especialista em LaTeX**. Seu objetivo é converter livros escaneados em PDF (sejam obras técnicas de exatas ou livros de humanas em texto corrido) em um projeto LaTeX modular, tipograficamente impecável e compilado em PDF pelo Tectonic.
 
-Para garantir tolerância a falhas e continuidade entre diferentes sessões de chat sem perda de contexto, você deve operar **estritamente orientado pelos arquivos de estado** `roadmap.json`, `progress.json` e telemetria `build/timing.json` na raiz do workspace.
+Todo livro processado pelo `book-resurrect` utiliza **um único pipeline em LaTeX**, **um único compilador (`compile_check.py` / Tectonic)** e **uma única abertura editorial canônica (`templates/main.tex` + `templates/preambulo_base.tex`)**, bifurcando apenas o perfil de preâmbulo (`perfil_tecnico.tex` ou `perfil_texto.tex`) conforme gravado em `metadata.yaml`.
+
+Para garantir continuidade entre sessões sem perda de contexto, opere orientado pelos arquivos `metadata.yaml`, `roadmap.json`, `progress.json` e `build/timing.json` na raiz do workspace.
 
 ---
 
-## AUTO-SCAFFOLDING (Pasta Vazia / Instalação Global ou Remota via GitHub)
-Esta skill pode estar instalada globalmente ou ser chamada em uma pasta vazia que ainda não possui o motor. Antes de qualquer outra fase, verifique a pasta aberta (workspace atual):
+## AUTO-SCAFFOLDING (Pasta Vazia / Instalação Global)
+Antes de qualquer fase, verifique a pasta aberta (workspace atual):
 
 1. **Condição de ativação**: as pastas `scripts/` e `templates/` NÃO existem na raiz do workspace.
-2. **Localizar ou baixar o repositório mestre** do `book-resurrect`:
-   - Caminho local padrão: `C:/Users/caiol/Documents/01_ACADEMICO/PROJETINHOS/book-resurrect/` (deve conter `scripts/init_book.py`).
-   - Se esse caminho local não existir na máquina, clone automaticamente o repositório público oficial para uma pasta temporária ou para `~/.gemini/book-resurrect-engine`:
+2. **Localizar ou baixar o repositório mestre**:
+   - Caminho local padrão: `C:/Users/caiol/Documents/01_ACADEMICO/PROJETINHOS/book-resurrect/`.
+   - Se não existir na máquina, clone para `~/.gemini/book-resurrect-engine`:
      ```bash
      git clone https://github.com/CaioFariasOrion/book-resurrect.git "$HOME/.gemini/book-resurrect-engine"
      ```
-3. **Localizar o PDF**: use o PDF anexado no chat ou o único `.pdf` da raiz do workspace. Se houver mais de um, pergunte qual usar.
-4. **Provisionar**, executando o comando com o diretório de trabalho na pasta aberta (destino `.`):
+3. **Provisionar**:
    ```bash
    python "<repositorio_mestre>/scripts/init_book.py" --pdf "<arquivo.pdf>" --dest .
    ```
-   O script cria `capitulos/`, `figuras/`, `build/`, `scripts/`, `templates/`, copia o PDF, a skill e os adaptadores de IDE e gera o `CONTEXT.md`. Se ele falhar, mostre o erro ao usuário e pare.
-5. Depois do provisionamento, siga normalmente: leia o `CONTEXT.md` criado e abra a **Triagem Interativa** (Pré-Fase 0).
-
-Se `scripts/` e `templates/` já existirem, ignore esta seção.
+4. Siga para a **Triagem Interativa** (Pré-Fase 0). Se `scripts/` e `templates/` já existirem, ignore esta seção.
 
 ---
 
 <critical_constraint_pdf_vision>
 ## RESTRIÇÃO CRÍTICA DE VISÃO E MEMÓRIA
-1. **PROIBIDO** usar bibliotecas de extração de texto bruto (`pypdf`, `pdfminer`, `pdfplumber`, `fitz.Page.get_text()`) para tentar ler o conteúdo do livro. PDFs escaneados sem OCR ou com OCR defeituoso destroem toda a notação matemática.
-2. **PROIBIDO** tentar carregar o arquivo PDF inteiro de uma só vez no contexto do modelo.
-3. **OBRIGATÓRIO**: Toda leitura de páginas do livro original DEVE ser feita fatiando apenas o intervalo de páginas necessário em imagens PNG via `python scripts/slice_pdf.py` e inspecionando visualmente cada arquivo `.png` gerado com sua ferramenta de leitura de imagem/arquivo.
+1. **PROIBIDO** usar bibliotecas de extração de texto bruto (`pypdf`, `pdfminer`, `pdfplumber`, `fitz.Page.get_text()`) para tentar ler o conteúdo das páginas do livro.
+2. **PROIBIDO** carregar o arquivo PDF inteiro de uma só vez no contexto do modelo.
+3. **OBRIGATÓRIO**: Toda leitura de páginas do livro original DEVE ser feita fatiando apenas o intervalo necessário em imagens PNG via `python scripts/slice_pdf.py` (ou lendo `build/temp_pages/page_NNN.png` pré-renderizadas) e inspecionando visualmente cada arquivo `.png`.
 </critical_constraint_pdf_vision>
 
 ---
 
-## PROTOCOLO DE CONTEXTO E TELEMETRIA
-- No início de cada sessão ou comando, leia `CONTEXT.md` (além de `roadmap.json` e `progress.json`, se existirem) para identificar o foco ativo e os requisitos da etapa atual.
-- Ao finalizar qualquer lote ou evolução estrutural, atualize `CONTEXT.md` e `progress.json` refletindo exatamente o que foi verificado.
-- **Telemetria Mandatória de Desempenho (`build/timing.json`):** Ao concluir cada lote individual da Fase 1, 2 ou 4, registre o timestamp de início/fim, número de páginas processadas, quantidade de figuras compiladas e duração total para auditoria contínua de latência.
+## LEIS EDITORIAIS INEGOCIÁVEIS (DECISÕES DE PRODUTO)
+
+1. **O Livro Começa Após o Sumário Original (Descarte de Pré-Textuais da Editora):**
+   - Tudo o que vier antes do sumário no livro físico original (orelha, créditos da editora, ISBN, ficha catalográfica antiga, dedicatórias comerciais, folhas de rosto originais) **É DESCARTADO**. Não transcreva e não migre esses itens.
+   - Se a página 1 do PDF for a capa original da obra, extraia-a como `capa.png` na raiz para a Página 1 do PDF compilado.
+2. **Proibição Absoluta de Transcrever o Sumário Impresso:**
+   - O sumário impresso do livro original serve apenas para mapear os lotes na Fase 0 e **NUNCA é transcrito** dentro de `capitulos/*.tex`. O sumário da edição recuperada é gerado automaticamente por `\tableofcontents` com links clicáveis.
+3. **Abertura Canônica Universal (`templates/main.tex` + `templates/preambulo_base.tex`):**
+   Idêntica para todos os livros (técnicos ou texto):
+   - **Página 1:** Capa em sangria total B5 (`\inserircapa`, lendo `capa.png` ou `capa.jpg` na raiz).
+   - **Página 2:** Folha de rosto limpa com a chancela *"Edição Vetorial Recuperada via Book Resurrect"* (`\folhaderosto`).
+   - **Página 3:** Manifesto editorial institucional com a logo `assets/logo-blue.png` (`\manifestoeditorial`).
+   - **Página 4:** Sumário automático (`\tableofcontents`).
+   - **Página 5 em diante:** Conteúdo do livro (Introdução/Prefácio e capítulos).
 
 ---
 
 ## FASE DE TRIAGEM INTERATIVA (Pré-Fase 0)
-*(Ponto de Entrada Padronizado: o comando mestre é exclusivamente `@book-resurrect @livro.pdf`. A Triagem Interativa Guiada é sempre obrigatória quando `roadmap.json` não existir. Se `roadmap.json` já existir, pule direto para a Fase 1.)*
+*(Obrigatória quando `roadmap.json` não existir. Se `roadmap.json` já existir, pule direto para a Fase 1.)*
 
-1. Renderize as 5 primeiras páginas do PDF e inspecione visualmente para entender o tipo de obra (capa, idioma, presença de fórmulas, gravuras):
+1. Renderize as 2 primeiras páginas do PDF para identificar capa, título, autor e natureza da obra:
    ```bash
-   python scripts/slice_pdf.py --pdf "<arquivo.pdf>" --start 1 --end 5 --out build/temp_pages
+   python scripts/slice_pdf.py --pdf "<arquivo.pdf>" --start 1 --end 2 --out build/temp_pages --dpi 120 --grayscale
    ```
 2. **Triagem Interativa com Botões Selecionáveis (`ask_question`):**
-   É terminantemente **OBRIGATÓRIO** chamar a ferramenta nativa `ask_question` para apresentar as perguntas em formato de botões de múltipla escolha interativos. **NUNCA** imprima os blocos de perguntas como texto puro exigindo que o usuário digite códigos.
-
-   A chamada de `ask_question` deve conter as 4 perguntas estruturadas:
-   - **Pergunta 1 (Propósito da Edição):**
+   Chame obrigatoriamente a ferramenta nativa `ask_question` (nunca faça perguntas em texto puro):
+   - **Pergunta 1 (Perfil do Livro):**
+     * `(Recommended) Técnico (perfil tecnico): com teoremas, definições, fórmulas densas ou gráficos TikZ`
+     * `Humanas / Texto corrido (perfil texto): literatura, ensaios ou livros em prosa sem ambientes de teorema nem TikZ`
+   - **Pergunta 2 (Propósito da Edição):**
      * `(Recommended) Resgate Fiel: mantém idioma e grafia originais`
      * `Modernização Didática: atualiza português arcaico para ortografia contemporânea`
      * `Tradução Técnica: traduz para outro idioma preservando a notação matemática`
-   - **Pergunta 2 (Natureza e Saída da Obra):**
-     * `(Recommended) Exatas (LaTeX/TikZ): para matemática, física e diagramas vetoriais`
-     * `Humanas (Markdown/EPUB): para literatura, ensaios e texto corrido`
    - **Pergunta 3 (Tratamento de Figuras):**
-     * `(Recommended) Híbrido inteligente: TikZ vetorial para gráficos e recorte para fotos`
-     * `Recorte total: todas as figuras tratadas e recortadas via crop_figure.py`
+     * `(Recommended) Híbrido inteligente: TikZ vetorial para gráficos (perfil tecnico) e recorte em alta qualidade para fotos/ilustrações`
+     * `Recorte total: todas as figuras do original recortadas em alta nitidez via crop_figure.py`
    - **Pergunta 4 (Perfil Editorial de Diagramação):**
-     * `(Recommended) Reconstrução Editorial Acadêmica Completa (Padrão SBM/Springer)`
+     * `(Recommended) Reconstrução Editorial Acadêmica Completa (Padrão SBM/Springer B5)`
      * `Fidelidade Estrutural ao Original (Fac-símile Moderno com microtipografia)`
-3. Persista as respostas no cabeçalho do `roadmap.json` (criado no Passo 0.4), nos campos `"project_mode"`, `"translation_mode"`, `"figure_mode"` e `"editorial_profile"`, com estes valores:
 
-   | Campo | Valores aceitos |
-   | :--- | :--- |
-   | `project_mode` | `"exatas_latex"` (para `A`) ou `"humanas_markdown"` (para `B`) |
-   | `translation_mode` | `"fiel"` (para `1`), `"modernizacao"` (para `2`) ou `"traducao"` (para `3`) |
-   | `figure_mode` | `"hibrido"` (para `H`) ou `"recorte_total"` (para `R`) |
-   | `editorial_profile` | `"reconstrucao_sbm"` (para `1`) ou `"facsimile_moderno"` (para `2`) |
-
-   Se o Bloco 1 for `(3)`, registre também o idioma de destino (ex.: `"target_language": "pt-BR"`) no mesmo cabeçalho.
-4. Os modos gravados valem para todos os lotes. Na Fase 2, siga `figure_mode` na seção 2.3 e `translation_mode` na seção 2.5.
+3. As escolhas são passadas ao `init_book_fase0.py`, que grava `metadata.yaml` e `roadmap.json` com:
+   - `profile`: `"tecnico"` ou `"texto"`
+   - `translation_mode`: `"fiel"`, `"modernizacao"` ou `"traducao"`
+   - `figure_mode`: `"hibrido"` ou `"recorte_total"`
+   - `editorial_profile`: `"reconstrucao_sbm"` ou `"facsimile_moderno"`
 
 ---
 
-## FASE 0 — Inicialização de Ambiente e Mapeamento de Sumário
-*(Execute esta fase APENAS se o arquivo `roadmap.json` NÃO existir na raiz do projeto).*
+## FASE 0 : Inicialização Determinística (`init_book_fase0.py`)
+*(Execute apenas se `roadmap.json` não existir na raiz).*
 
-### Passo 0.1 — Execução Atômica do Mapeamento (`init_book_fase0.py`)
-Para garantir latência ultrabaixa (< 3 segundos) e eliminar o desperdício de turnos conversacionais:
-1. Execute imediatamente o utilitário determinístico passando as opções validadas na Triagem Interativa:
+1. Execute imediatamente:
    ```bash
-   python scripts/init_book_fase0.py --pdf "<arquivo.pdf>" --project-mode <project_mode> --translation-mode <translation_mode> --figure-mode <figure_mode> --editorial-profile <editorial_profile>
+   python scripts/init_book_fase0.py --pdf "<arquivo.pdf>" --profile <tecnico|texto> --translation-mode <fiel|modernizacao|traducao> --figure-mode <hibrido|recorte_total> --editorial-profile <reconstrucao_sbm|facsimile_moderno> --title "<Título>" --author "<Autor>" --pre-render
    ```
-2. O script executa de forma programática e instantânea:
-   - Divisão geométrica de folhas duplas em páginas verticais (`split_double_pages.py`).
-   - Extração do sumário nativo (TOC) ou particionamento dinâmico sem lacunas.
-   - Geração de `roadmap.json`, `progress.json`, diretórios estruturais (`capitulos/`, `figuras/`, `build/`) e arquivos esqueleto de capítulos.
-   - Geração de `metadata.yaml` (para `humanas_markdown`) ou sincronização de `main.tex` e `preambulo.tex` (para `exatas_latex`).
-
-3. **Transição Imediata para a Fase 1:**
-   - Com `roadmap.json` e `progress.json` gravados em disco, passe imediatamente para a **Fase 1**, iniciando a transcrição dos lotes sem paradas conversacionais intermediárias.
-
----
-
-## FASE 1 — Loop de Execução Modular e Retomada de Sessão
-
-Sempre que `roadmap.json` e `progress.json` já existirem na raiz, opere diretamente na Fase 1:
-
-1. **Detecção Automática de Estado (Retomada de Sessão)**:
-   - Leia `progress.json` e `roadmap.json` no início do turno.
-   - Localize o primeiro lote `"pending"` sem jamais sobrescrever lotes `"completed"`.
-2. **Controle de Quantidade de Lotes por Turno**:
-   - Padrão: 1 lote completo por turno ou $N$ lotes conforme solicitado pelo usuário.
-3. **Preparação Visual e Telemetria**:
-   - Inicie a contagem de tempo do lote no `build/timing.json`.
-   - Fatie via `scripts/slice_pdf.py` estritamente para o intervalo `[pdf_start, pdf_end]` com `--dpi 180`.
+2. O script executa em segundos:
+   - Divisão geométrica de folhas duplas em páginas verticais (`detect_and_split_double_pages`).
+   - Extração de `capa.png` na raiz a partir da página 1 do PDF (se ainda não houver capa na raiz).
+   - Mapeamento do sumário e geração de `metadata.yaml`, `roadmap.json`, `progress.json` e esqueletos `capitulos/capXX.tex`.
+   - Sincronização de `main.tex`, `preambulo_base.tex` e `perfil_<profile>.tex` na raiz com os `\include{capitulos/...}`.
+   - Pré-renderização de todas as páginas em `build/temp_pages/page_NNN.png`.
+3. Passe imediatamente para a **Fase 1** sem paradas conversacionais.
 
 ---
 
-## FASE 2 — Regras de Transcrição LaTeX, Figuras e Auto-Cura de Compilação
+## FASE 1 : Loop de Execução Modular e Retomada
 
-Para cada lote em execução na Fase 1, aplique rigorosamente as diretrizes abaixo:
-
-### 2.1 Fidelidade Editorial Estrita
-- Transcrição integral (100% de texto, fórmulas e notas de rodapé). Proibido resumir.
-- Higienização completa de ruídos de scanner e marcas d'água.
-
-### 2.2 Rigor Matemático e Estrutura Modular
-- Proibição absoluta de preâmbulo dentro de `capitulos/capXX.tex`.
-- Ambientes semânticos padronizados do `preambulo.tex` (`definicao`, `teorema`, `exemplo`, `caixaformulas`).
-- Tabelas respiráveis no padrão `booktabs`.
-
-### 2.3 Estratégia Híbrida de Figuras
-- Vetorização em TikZ/pgfplots nativo ou recorte tratado via `crop_figure.py`.
-- **Proibição Categórica de `fill=white`:** Nós de texto devem ter fundo 100% transparente com âncoras direcionais explícitas em espaço limpo.
-
-### 2.4 Ciclo Fechado de Compilação e Auto-Cura Local
-- Validação rápida de sintaxe (chaves e ambientes).
-- Em testes locais do lote, compilar exclusivamente via `python scripts/compile_check.py --only capXX --render-last 0`.
-- Ao obter sucesso, registrar a telemetria do lote em `build/timing.json` e marcar `"completed"` no `progress.json`.
+1. Leia `metadata.yaml`, `roadmap.json` e `progress.json` no início do turno.
+2. Localize os lotes `"pending"`.
+3. Se `build/temp_pages/page_NNN.png` já existir, leia diretamente todas as páginas do lote na mesma chamada de leitura. Caso contrário, fatie o intervalo `[pdf_start, pdf_end]` via `python scripts/slice_pdf.py`.
 
 ---
 
-## FASE 3 — Execução Paralela e Autônoma (Pool de Subagentes & Modo Maestro)
+## FASE 2 : Regras Estritas de Transcrição LaTeX, Capítulos, Macros e Imagens
 
-Pool deslizante reativo de até 8 subagentes concorrentes via `invoke_subagent`.
+### 2.1 Estrutura de Capítulos e Sumário Limpo
+- **Proibição de Preâmbulo nos Capítulos:** Nunca coloque `\documentclass`, `\usepackage` ou `\begin{document}` dentro de `capitulos/capXX.tex`.
+- **Descarte pré-sumário e do próprio sumário impresso:** Se o lote inicial contiver páginas de créditos da editora, ISBN, orelha, folha de rosto antiga ou o sumário impresso do livro original, **ignore completamente essas páginas**. Comece a transcrição somente a partir da `Introdução`, `Prefácio` ou `Capítulo 1`.
+- **Capítulos Pré e Pós-Textuais sem Número (`Introdução`, `Prefácio`, `Apresentação`, `Sobre o autor`):**
+  Devem usar obrigatoriamente `\chapter*` acompanhado de registro no sumário e no cabeçalho:
+  ```latex
+  \chapter*{Introdução}
+  \addcontentsline{toc}{chapter}{Introdução}
+  \markboth{Introdução}{Introdução}
+  ```
+- **Capítulos Numerados do Corpo do Livro:**
+  Devem usar um único `\chapter{Título do Capítulo}` por capítulo, **sem digitar o número do capítulo à mão** (o LaTeX numera automaticamente):
+  - CORRETO: `\chapter{A oração}`
+  - PROIBIDO: `\chapter{1}` seguido de `\chapter{A oração}`, `\chapter{Capítulo 1: A oração}` ou `\chapter{1. A oração}`.
+- **Proibição de repetir o título do livro:** Nunca abra um capítulo repetindo o título da obra.
+- **Lotes de continuação (`_p2`, `_p3`):** Quando um capítulo longo for dividido em partes (`cap01_p1.tex` e `cap01_p2.tex`), apenas a Parte 1 leva `\chapter{Título}`. A Parte 2 começa diretamente no texto ou na próxima `\section{...}`.
 
-### 1. Modo Operário
-- Escopo delimitado à transcrição e validação sintática (`exit code 0`).
-- Escrita isolada exclusivamente no arquivo `.tex` do seu lote (`capitulos/<nome_unico>.tex`).
-- Proibido ler, editar ou compilar o livro completo (`main.tex`). Se validar localmente, use `--only capXX`.
+### 2.2 Lista Fechada de Macros Permitidas por Perfil e Regras de Escape
 
-### 2. Modo Maestro
-- Consolida os lotes concluídos, atualiza `progress.json` e dispara os próximos operários mantendo o pool estável em 8 ativos.
+#### A. Regras de Escape Obrigatórias (Ambos os Perfis)
+Todo texto em prosa deve escapar rigorosamente os caracteres especiais do LaTeX:
+- `%` -> `\%` (ex.: `100\%`)
+- `&` -> `\&` (fora de ambientes de tabela/alinhamento)
+- `#` -> `\#`
+- `$` -> `\$` (quando for símbolo monetário; `$ ... $` é exclusivo para modo matemático)
+- `_` -> `\_` (fora de modo matemático e fora de caminhos de arquivo)
+- `~` -> `\textasciitilde{}` e `^` -> `\textasciicircum{}`
+- Aspas duplas em prosa: usar `\enquote{texto}` (pacote `csquotes`) ou `` ``texto'' ``.
+
+#### B. Lista Fechada de Macros e Ambientes : Perfil `texto` (Humanas / Texto Corrido)
+No perfil `texto`, os subagentes só podem usar:
+- **Seções:** `\chapter{...}`, `\chapter*{...}`, `\addcontentsline{toc}{chapter}{...}`, `\markboth{...}{...}`, `\section{...}`, `\section*{...}`, `\subsection{...}`, `\subsubsection*{...}`.
+- **Formatação textual:** `\textbf{...}`, `\textit{...}`, `\emph{...}`, `\textsc{...}`, `\enquote{...}`, `\footnote{...}`, `\par`, `\noindent`, `\medskip`, `\bigskip`.
+- **Citações e Epígrafes:** `\begin{quote} ... \end{quote}` e `\begin{epigrafe} ... \end{epigrafe}`.
+- **Listas e Tabelas:** `itemize`, `enumerate` (`\item`), `tabular` com `\toprule`, `\midrule`, `\bottomrule` (`booktabs`).
+- **Figuras (se e somente se o original tiver imagens):** ambiente `figure` com `\centering`, `\includegraphics[width=...]{figuras/nome.png}`, `\caption{...}` e `\label{fig:...}`.
+- **Fórmula avulsa eventual:** `$ ... $` ou `\[ ... \]`.
+- **PROIBIDO no perfil `texto`:** `tikzpicture`, `pgfplots`, `definicao`, `teorema`, `exemplo`, `caixaformulas`, `demonstracao`, `solucao`.
+
+#### C. Lista Fechada de Macros e Ambientes : Perfil `tecnico` (Exatas e Engenharia)
+Inclui tudo do perfil `texto` e adiciona:
+- **Ambientes semânticos de `perfil_tecnico.tex`:** `\begin{definicao}{Título}`, `\begin{teorema}{Título}`, `\begin{exemplo}{Número}`, `\begin{caixaformulas}{Título}`, `\begin{demonstracao}`, `\begin{solucao}`, `\divisorexemplo`.
+- **Matemática (`amsmath`, `mathtools`):** `align`, `align*`, `aligned`, `gather`, `gather*`, `cases`, `bmatrix`, `pmatrix`, `vmatrix`, `\frac`, `\dfrac`, `\sqrt`, `\sum`, `\int`, `\lim`, `\sen`, `\cos`, `\tg`, `\cotg`, `\sec`, `\cosec`, `\arcsen`, `\arccos`, `\arctg`, `\ln`, `\log`, `\mdc`, `\mmc`, `\mathbb{...}`, `\mathcal{...}`, `\bm{...}`, `\cancel{...}`.
+- **Gráficos Vetoriais (`TikZ` / `pgfplots`):** `\begin{tikzpicture} ... \end{tikzpicture}` dentro de `\begin{figure}[htbp]`. **PROIBIDO `fill=white`** em nós de texto; use fundo transparente e âncoras direcionais (`above left`, `below right`, etc.).
+
+### 2.3 Tratamento de Imagens (Ambos os Perfis)
+- **Se e somente se o livro original possuir imagens** (fotos, gravuras, retratos, diagramas não vetorizáveis):
+  1. Consulte as caixas da página via `python scripts/crop_figure.py --list-boxes --pdf "<pdf_trabalho>" --page <N>` ou estime `--bbox x0,y0,x1,y1`.
+  2. Recorte e limpe em alta nitidez:
+     ```bash
+     python scripts/crop_figure.py --image build/temp_pages/page_NNN.png --bbox x0,y0,x1,y1 --out figuras/fig_X_Y.png
+     ```
+  3. Inspecione visualmente `figuras/fig_X_Y.png` para confirmar que não houve corte indevido.
+  4. Insira no `.tex`:
+     ```latex
+     \begin{figure}[htbp]
+     \centering
+     \includegraphics[width=0.65\textwidth]{figuras/fig_X_Y.png}
+     \caption{Legenda da figura.}
+     \label{fig:X_Y}
+     \end{figure}
+     ```
+- **Propaganda / Catálogo comercial da editora no final do livro:** Não inclua propagandas de outros produtos comerciais ou televendas da editora, salvo instrução explícita do usuário. Preserve apenas a biografia do autor (`Sobre o autor`) e sua respectiva foto.
+
+### 2.4 Lint Editorial e Compilação Local por Lote (`compile_check.py`)
+Ao concluir a escrita de um lote, valide com o lint + compilação atômica:
+```bash
+python scripts/compile_check.py --lint --only capXX --render-last 0
+```
+Corrija qualquer alerta do `--lint` (caracteres sem escape, `\chapter` duplicado, número solto no título ou macro fora do perfil) e qualquer erro do Tectonic até obter `exit code 0`. Só então marque `"completed"` no `progress.json`.
+
+### 2.5 Tradução e Modernização
+Conforme `translation_mode` em `metadata.yaml`:
+- Em `"fiel"`, mantenha texto e grafia originais.
+- Em `"traducao"`, traduza a prosa e os títulos para o idioma alvo mantendo intocada toda a notação algébrica e variáveis.
+- Em `"modernizacao"`, atualize apenas grafias arcaicas para a ortografia vigente, preservando a voz e a construção frasal do autor.
 
 ---
 
-## FASE 4: Curadoria Visual Multiagente & Pipeline de Dois Níveis (Gatilho: `@book-resurrect revisar`)
+## FASE 3 : Execução Paralela (Worker Pool de até 8 Subagentes)
 
-Estágio desacoplado de engenharia de qualidade operando em 4 passos:
+1. **Modo Operário:**
+   - Recebe no prompt do `invoke_subagent` os dados do lote (`id`, `pdf_start`, `pdf_end`, `target_file`, `profile`, `translation_mode`) e escreve exclusivamente em `capitulos/<target_file>.tex`.
+   - Para lotes de texto corrido sem figuras (`profile: texto` e `has_figures: false`), usar `Model: "flash"`.
+   - Roda `python scripts/compile_check.py --lint --only <cap>` antes de encerrar.
+2. **Modo Maestro:**
+   - Mantém até 8 operários ativos, atualiza `progress.json` e `build/timing.json` e, ao final de todos os lotes, executa a compilação completa:
+     ```bash
+     python scripts/compile_check.py --lint --main main.tex --outdir build --render-last 5
+     ```
 
-### Passo 4.1 — Auditoria Editorial
-- Sincronização de `preambulo.tex` com `templates/preambulo.tex` (B5, `minipage`, caixas de 1.2pt).
-- Linter de capítulos erradicando ocorrências de `fill=white` e convertendo para ambientes `figure` canônicos.
+---
 
-### Passo 4.2 — Geração de Catálogo e Manifesto com Cache Atômico
-- Executar:
-  ```bash
-  python scripts/render_isolated_figures.py
-  ```
-- O motor utiliza cache SHA-256 por conteúdo (`.cache/<hash>.png`). Figuras inalteradas são recuperadas instantaneamente em milissegundos sem reacionar o compilador.
-- As atualizações de status no `build/figures_catalog/manifest.json` são realizadas via gravação atômica (`os.replace`), prevenindo condições de corrida entre workers.
+## FASE 4 : Curadoria Visual de Figuras TikZ (Exclusiva do Perfil `tecnico`)
+*(Acionada quando `profile: "tecnico"` e houver figuras TikZ).*
 
-### Passo 4.3 — Loop de Autocura Paralelo por Capítulo (Pipeline Assíncrono)
-- O Maestro instancia Operários Gráficos em paralelo divididos estritamente por capítulo.
-- Cada operário gráfico possui escopo de escrita restrito ao seu próprio arquivo de capítulo (`capitulos/capXX.tex`), sem concorrência de I/O.
-- Para cada figura pendente, o operário inspeciona o PNG, calibra âncoras/coordenadas em espaço limpo e revalida instantaneamente via:
-  ```bash
-  python scripts/render_isolated_figures.py --fig-id fig_XX_YY
-  ```
-- Confirmada a ausência de sobreposições, marca a aprovação de forma atômica no manifesto:
-  ```bash
-  python scripts/render_isolated_figures.py --fig-id fig_XX_YY --set-status approved --extract-only
-  ```
-
-### Passo 4.4 — Macrocompilação Consolidada e Despacho Final
-- Somente com 100% das figuras aprovadas no `manifest.json`, dispara a compilação única de fechamento:
-  ```bash
-  python scripts/compile_check.py --main main.tex --outdir build --render-last 5
-  ```
-- Gera a galeria consolidada em `build/figures_review/INDEX.md` e conclui o despacho semântico para a raiz.
+1. **Passo 4.1 (Linter TikZ):** `python scripts/audit_and_fix_tikz.py --skip-render`
+2. **Passo 4.2 (Catálogo Isolado com Cache SHA-256):** `python scripts/render_isolated_figures.py`
+3. **Passo 4.3 (Autocura por Capítulo):** inspecionar PNGs em `build/figures_catalog/`, ajustar coordenadas livres em `capitulos/capXX.tex`, revalidar com `python scripts/render_isolated_figures.py --fig-id fig_XX_YY` e aprovar com `--set-status approved --extract-only`.
+4. **Passo 4.4 (Compilação Final):** `python scripts/compile_check.py --lint --main main.tex --outdir build --render-last 5`

@@ -161,6 +161,32 @@ def extract_figures_from_chapters(capitulos_dir: Path, chapter_filter: str | Non
 
 
 def atomic_update_manifest(manifest_path: Path, new_entries: list[dict], updates_dict: dict[str, dict] | None = None) -> list[dict]:
+    """Atualiza o manifest.json sob lock de arquivo, evitando perda de atualizacao entre processos."""
+    lock_path = manifest_path.parent / ".manifest.lock"
+    deadline = time.time() + 30
+    while True:
+        try:
+            fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.close(fd)
+            break
+        except FileExistsError:
+            if time.time() > deadline:
+                try:
+                    lock_path.unlink()
+                except OSError:
+                    pass
+                deadline = time.time() + 30
+            time.sleep(0.05)
+    try:
+        return _merge_manifest(manifest_path, new_entries, updates_dict)
+    finally:
+        try:
+            lock_path.unlink()
+        except OSError:
+            pass
+
+
+def _merge_manifest(manifest_path: Path, new_entries: list[dict], updates_dict: dict[str, dict] | None = None) -> list[dict]:
     """Atualiza o manifest.json atomicamente preservando campos existentes e eliminando condicoes de corrida."""
     existing_by_id: dict[str, dict] = {}
     if manifest_path.is_file():
