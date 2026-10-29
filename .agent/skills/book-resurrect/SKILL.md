@@ -55,7 +55,7 @@ Se `scripts/` e `templates/` já existirem, ignore esta seção.
    ```bash
    python scripts/slice_pdf.py --pdf "<arquivo.pdf>" --start 1 --end 5 --out build/temp_pages
    ```
-2. Apresente ao usuário a triagem questionando nos 3 blocos abaixo e AGUARDE as respostas. Não inicie a Fase 0 sem elas.
+2. Apresente ao usuário a triagem questionando nos 4 blocos abaixo e AGUARDE as respostas. Não inicie a Fase 0 sem elas.
 
    **Bloco 1 (Propósito):**
    - `(1) Resgate Fiel`: mantém idioma e grafia do original.
@@ -69,13 +69,19 @@ Se `scripts/` e `templates/` já existirem, ignore esta seção.
    **Bloco 3 (Figuras):**
    - `(H) Híbrido inteligente`: TikZ vetorial para geometria e gráficos, recorte para gravuras e fotos.
    - `(R) Recorte total`: todas as figuras via `crop_figure.py`.
-3. Persista as respostas no cabeçalho do `roadmap.json` (criado no Passo 0.4), nos campos `"project_mode"`, `"translation_mode"` e `"figure_mode"`, com estes valores:
+
+   **Bloco 4 (Perfil Editorial de Diagramação):**
+   - `(1) Reconstrução Editorial Acadêmica Completa (Padrão SBM/Springer)`: recomendado para obras antigas, apostilas datilografadas ou escaneamentos degradados (reconstrói a mancha gráfica e aplica padronização integral).
+   - `(2) Fidelidade Estrutural ao Original (Fac-símile Moderno)`: recomendado para livros contemporâneos (preserva 100% da microtipografia do corpo de texto, recuos, epígrafes e citações em bloco, restringindo o design system exclusivamente ao `preambulo.tex`).
+   *(Nota: ambientes de teoremas, definições e exemplos aplicam-se exclusivamente a obras de Ciências Exatas sob `project_mode: "exatas_latex"`).*
+3. Persista as respostas no cabeçalho do `roadmap.json` (criado no Passo 0.4), nos campos `"project_mode"`, `"translation_mode"`, `"figure_mode"` e `"editorial_profile"`, com estes valores:
 
    | Campo | Valores aceitos |
    | :--- | :--- |
    | `project_mode` | `"exatas_latex"` (para `A`) ou `"humanas_markdown"` (para `B`) |
    | `translation_mode` | `"fiel"` (para `1`), `"modernizacao"` (para `2`) ou `"traducao"` (para `3`) |
    | `figure_mode` | `"hibrido"` (para `H`) ou `"recorte_total"` (para `R`) |
+   | `editorial_profile` | `"reconstrucao_sbm"` (para `1`) ou `"facsimile_moderno"` (para `2`) |
 
    Se o Bloco 1 for `(3)`, registre também o idioma de destino (ex.: `"target_language": "pt-BR"`) no mesmo cabeçalho.
 4. Os modos gravados valem para todos os lotes. Na Fase 2, siga `figure_mode` na seção 2.3 e `translation_mode` na seção 2.5.
@@ -366,12 +372,16 @@ Ao ser acionado para processamento ponta a ponta sem intervenção humana:
 - **Isolamento Gráfico:** Utilizar prefixo exclusivo por lote em figuras recortadas (`figuras/<lote>_fig_Y.png`) ou construir ilustrações diretamente em TikZ vetorial no corpo do arquivo `.tex`.
 - **Fatiamento Restrito:** Executar `slice_pdf.py` estritamente para o intervalo de páginas (`--start` e `--end`) do seu lote.
 - **Isolamento de Compilação Local:** Se o operário executar validação de auto-cura com `compile_check.py`, deve utilizar obrigatoriamente a subpasta isolada do seu lote (`--outdir build/<batch_id>`), evitando colisões de escrita ou bloqueio de arquivos no Windows.
-- **Diretrizes Tipográficas Obrigatórias:**
+- **Diretrizes Tipográficas e Estruturais Obrigatórias:**
   - **PROIBIDO** o uso de `tabular` para diagramação de listas de exercícios (obrigatório o uso de `tasks` ou `multicol` + `enumerate`).
   - **PROIBIDO** englobar múltiplos exemplos, tabelas ou gráficos TikZ dentro de caixas fechadas `tcolorbox`. Exemplos devem ser sempre texto corrido com `\begin{exemplo}`.
+  - **PROIBIÇÃO DE LEGENDAS AVULSAS:** PROIBIDO usar `\begin{center} ... \refstepcounter{figure}` manual. Toda figura deve usar obrigatoriamente `\begin{figure}[htbp] ... \caption{...} \label{...} \end{figure}`.
+  - **PROIBIÇÃO DE RÉGUAS MANUAIS:** PROIBIDO injetar `\hrule` manual ou excessos de `\vspace` dentro dos capítulos. Para divisórias em exemplos, use a macro semântica canônica `\divisorexemplo`.
+  - **PROTOCOLO ANTICOLISÃO NO TIKZ:** Todo `node` de texto próximo a curvas, vetores ou eixos deve possuir âncoras direcionais explícitas (`above left`, `below right`, `xshift`, `yshift`) e fundo protetor `fill=white, inner sep=1.5pt`. Gráficos com ramos assintóticos devem obrigatoriamente conter `\clip` para evitar vazamento da mancha.
   - Tabelas matemáticas e tabelas-verdade devem usar o estilo respirável `booktabs`, evitando grades completas claustrofóbicas em todas as células.
-- **Bloqueio de Concorrência (Inviolável):**
+- **Bloqueio de Concorrência e Imutabilidade (Inviolável):**
   - PROIBIDO ler, abrir ou editar `main.tex`.
+  - PROIBIDO ler, abrir ou editar `preambulo.tex`. Todas as macros e estilos já estão congelados e padronizados.
   - PROIBIDO modificar `roadmap.json`, `progress.json` ou `CONTEXT.md`.
   - PROIBIDO executar `pdflatex`, `tectonic` ou `compile_check.py` sobre `main.tex`.
 - **Validação Sintática Local:** Validar antes do encerramento o balanceamento exato de chaves `{}` e o fechamento correspondente de todos os blocos `\begin{...}` e `\end{...}` em `capitulos/<nome_unico>.tex`.
@@ -388,27 +398,22 @@ Ao ser acionado para processamento ponta a ponta sem intervenção humana:
 
 ## FASE 4: Revisão Editorial e Auto-Cura Desacoplada (Gatilho: `@book-resurrect revisar`)
 
-Estágio independente acionado sob demanda após a compilação do `main.pdf`. Opera em duas camadas complementares:
+Estágio independente acionado sob demanda após a compilação do `main.pdf`. Opera em 3 Estágios mandatórios:
 
-### Camada 1: Auto-Cura Geométrica de Layout
-1. O agente varre `build/main.log` e localiza todas as ocorrências de `Overfull \hbox`.
-2. Ajusta tabelas que estouram a margem (aplicando `tabularx`, redimensionamento proporcional ou ajuste de `\tabcolsep`).
-3. Inspeciona blocos `TikZ` e `pgfplots`, injetando `fill=white, inner sep=1.5pt` em nós posicionados sobre curvas ou retas para impedir colisão visual de rótulos.
-4. Recompila o documento via `python scripts/compile_check.py` e valida visualmente as páginas afetadas.
+### Estágio 4.1 — Hard Reset de Preâmbulo e Linter de Código
+1. **Sincronização Canônica:** Sobrescrever ou sincronizar as macros do `preambulo.tex` local com o template canônico de Ciências Exatas (`templates/preambulo.tex`), garantindo que a mancha gráfica B5, a ancoragem de `figure` via `minipage` e as caixas semânticas mínimas estejam ativas.
+2. **Linter Estrutural de Capítulos:** Executar script de linting nos arquivos `capitulos/*.tex`:
+   - Converte automaticamente blocos avulsos `\begin{center} ... \refstepcounter{figure}` para ambientes canônicos `\begin{figure}[htbp] ... \caption{...} \label{...} \end{figure}`.
+   - Higieniza e padroniza réguas manuais `\hrule` duplicadas ou com `\vspace` soltos para a macro semântica protegida `\divisorexemplo`.
 
-### Camada 2: Errata Humana-no-Loop
-1. **Trava Ética Rígida:** A IA é proibida de alterar deduções matemáticas ou o texto do autor original de forma silenciosa.
-2. Divergências matemáticas, saltos lógicos ou gralhas históricas detectadas em comparação contra o scan original devem ser catalogadas no arquivo `ERRATA.md` na raiz do projeto.
-3. Para cada item registrado em `ERRATA.md`, apresente a localização (capítulo, página do original e trecho), a descrição da divergência e as opções padronizadas para escolha do usuário:
-   - `[M] Manter` (preservar exatamente como impresso no original)
-   - `[C] Corrigir no texto` (aplicar a correção diretamente no `.tex` / `.md`)
-   - `[N] Nota de Rodapé` (manter o texto original e inserir `\footnote{Nota de revisão: ...}` explicando a correção)
+### Estágio 4.2 — Auditoria Visual e Geométrica de TikZ
+1. **Mapeamento de Blocos TikZ:** Varrer todos os blocos `tikzpicture` da obra, inspecionando coordenadas e rótulos (`node`).
+2. **Protocolo Anticolisão:** Injetar `fill=white, inner sep=1.5pt` e calibrar âncoras (`above`, `below`, `left`, `right`, `xshift`, `yshift`) em nós sobrepostos a curvas ou eixos cartesianos.
+3. **Controle de Escala e Limites:** Inserir `\clip` em curvas assintóticas e ajustar fatores de `scale` para impedir que diagramas ultrapassem a mancha útil de 120mm x 186mm.
+4. **Análise de Log:** Varrer `build/main.log` para sanar avisos de `Overfull \hbox` e orfandades graves (`Underfull \vbox`).
 
-
-### Camada 3: Empacotamento Plug-and-Play e Despacho Semântico
-1. **Detecção e Injeção Automática de Capa:**
-   - O template `main.tex` executa `\inserircapa` na abertura do documento.
-   - Se existir `capa.png`, `capa.jpg` ou `capa.jpeg` na raiz do projeto, o LaTeX insere automaticamente a primeiríssima página em sangria total (`\newgeometry{margin=0pt}`) com largura e altura correspondentes ao papel B5 (`\paperwidth` e `\paperheight`), restaurando a geometria em seguida para a folha de rosto. Caso nenhuma imagem esteja presente, o documento compila normalmente sem ela.
-2. **Despacho Semântico para a Raiz:**
-   - Após a compilação com sucesso (`exit code 0`), `scripts/compile_check.py` lê o título da obra e o autor (de `roadmap.json` ou `main.tex`), sanitiza o nome e copia `build/main.pdf` diretamente para a raiz do repositório como `<Titulo>_<Autor>.pdf`.
-   - Se o nome coincidir com o PDF escaneado original (`source_pdf`), adiciona o sufixo `_Recuperado.pdf` para prevenir sobrescrita.
+### Estágio 4.3 — Empacotamento Institucional e Despacho
+1. **Verificação de Preliminares:** Validar a presença de Capa (via `\inserircapa`), Folha de Rosto e Verso Institucional (com Fênix Azul e Manifesto Editorial).
+2. **Catálogo de Erratas (`ERRATA.md`):** Divergências conceituais ou gralhas históricas detectadas contra o scan original devem ser catalogadas em `ERRATA.md` com as opções `[M] Manter`, `[C] Corrigir no texto` ou `[N] Nota de Rodapé`.
+3. **Despacho Semântico para a Raiz:**
+   - Após a compilação com sucesso (`exit code 0`), `scripts/compile_check.py` lê o título da obra e o autor (de `roadmap.json` ou `main.tex`), sanitiza o nome e copia `build/main.pdf` diretamente para a raiz do repositório como `<Titulo>_<Autor>.pdf` (ou `main.pdf`).

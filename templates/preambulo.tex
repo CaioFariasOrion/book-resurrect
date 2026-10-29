@@ -1,30 +1,34 @@
 % ==============================================================================
-% preambulo.tex : Preambulo Canonico do Pipeline book-resurrect (v2.1 SBM/Springer)
+% preambulo.tex: Preâmbulo Canônico do Pipeline book-resurrect
+% Padrão Editorial Acadêmico de Ciências Exatas (SBM / IMPA / Springer)
+% Compatível com XeTeX (Tectonic) e pdfLaTeX / latexmk
 % ==============================================================================
 
-% --- Codificacao e Idioma ---
+% --- Codificação e Idioma ---
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[brazil]{babel}
 
-% --- Geometria da Pagina (Papel B5 Editorial) ---
-\usepackage[
-    b5paper,
-    top=2.2cm,
-    bottom=2.2cm,
-    inner=2.2cm,
-    outer=1.8cm,
-    headheight=15pt
-]{geometry}
+% --- Geometria da Página (Papel B5 Editorial) ---
+\usepackage{geometry}
+\geometry{
+    paperwidth=160mm,
+    paperheight=230mm,
+    top=22mm,
+    bottom=22mm,
+    inner=24mm,
+    outer=18mm,
+    headheight=14pt
+}
 
-% --- Tipografia e Microtipografia (Prevencao de Overfull \hbox) ---
+% --- Tipografia e Microtipografia ---
 \usepackage{lmodern}
 \usepackage{microtype}
+\emergencystretch=1.5em
 \setlength{\parskip}{0.4em}
 \setlength{\parindent}{1.25em}
-\emergencystretch=1.5em
 
-% --- Matematica Avancada ---
+% --- Matemática Avançada ---
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsfonts}
@@ -33,87 +37,30 @@
 \usepackage{bm}
 \usepackage{cancel}
 
-% --- Operadores Matematicos e Compatibilidade Internacional (ISO/ABNT) ---
-\usepackage{icomma}
+% --- Controle Rigoroso de Paginação e Orfandade ---
+\allowdisplaybreaks[3]
+\widowpenalty=10000
+\clubpenalty=10000
+\displaywidowpenalty=10000
+\raggedbottom
 
-% Trigonometria e Inversas (Brasil e Internacional)
-\providecommand{\sen}{\operatorname{sen}}
-\providecommand{\tg}{\operatorname{tg}}
-\providecommand{\cotg}{\operatorname{cotg}}
-\providecommand{\ctg}{\operatorname{cotg}}
-\providecommand{\cossec}{\operatorname{cossec}}
-\providecommand{\cosec}{\operatorname{cossec}}
-\providecommand{\arctg}{\operatorname{arctg}}
-\providecommand{\arcctg}{\operatorname{arcctg}}
-
-% Funcoes Hiperbolicas (Escolas Russa e Francesa mapeadas para o padrao internacional)
-\providecommand{\sh}{\sinh}
-\providecommand{\ch}{\cosh}
-\makeatletter
-\DeclareRobustCommand{\th}{\relax\ifmmode\tanh\else\symbol{254}\fi}
-\makeatother
-\providecommand{\cth}{\coth}
-\providecommand{\arsh}{\operatorname{arsinh}}
-\providecommand{\arch}{\operatorname{arcosh}}
-\providecommand{\arth}{\operatorname{artanh}}
-\providecommand{\arcth}{\operatorname{arcoth}}
-
-% Teoria dos Numeros e Aritmetica Multilingue (MDC e MMC)
-\providecommand{\mdc}{\operatorname{mdc}}
-\providecommand{\mmc}{\operatorname{mmc}}
-\providecommand{\pgcd}{\operatorname{mdc}}
-\providecommand{\ppcm}{\operatorname{mmc}}
-\providecommand{\ggT}{\operatorname{mdc}}
-\providecommand{\kgV}{\operatorname{mmc}}
-\providecommand{\lcm}{\operatorname{mmc}}
-
-% Algebra Linear, Analise Vetorial e Estatistica
-\providecommand{\tr}{\operatorname{tr}}
-\providecommand{\Sp}{\operatorname{tr}}
-\providecommand{\posto}{\operatorname{posto}}
-\providecommand{\rang}{\operatorname{posto}}
-\providecommand{\rg}{\operatorname{posto}}
-\providecommand{\rot}{\operatorname{rot}}
-\providecommand{\Nuc}{\operatorname{Nuc}}
-\providecommand{\Var}{\operatorname{Var}}
-\providecommand{\Cov}{\operatorname{Cov}}
-\providecommand{\Esp}{\operatorname{E}}
-
-% --- Tabelas, Listas em Colunas e Figuras ---
+% --- Tabelas, Figuras e Posicionamento ---
 \usepackage{booktabs}
 \usepackage{array}
-\usepackage{tabularx}
 \usepackage{multirow}
-\usepackage{multicol}
-\usepackage{tasks}
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage[font=small,labelfont=bf]{caption}
 \usepackage{subcaption}
-\usepackage[shortlabels]{enumitem}
+\usepackage{enumitem}
 
-% Configuracao padrao para listas de exercicios em colunas (tasks)
-\settasks{
-    label=(\alph*),
-    label-width=1.8em,
-    item-indent=2.2em,
-    column-sep=1.2em
-}
-
-% Espacamento respiravel para tabelas matematicas e tabelas-verdade
-\setlength{\tabcolsep}{5.5pt}
-\renewcommand{\arraystretch}{1.15}
-
-% --- Paleta Editorial SBM / Springer ---
+% --- Cores Sóbrias Editoriais ---
 \usepackage[dvipsnames,table]{xcolor}
-\definecolor{defBlue}{HTML}{1B4F72}    % Azul Cobalto (Definicoes)
-\definecolor{defBack}{HTML}{F8F9FA}    % Fundo sutil 98% neutro
-\definecolor{thmRed}{HTML}{78281F}     % Vinho / Rubi Escuro (Teoremas)
-\definecolor{thmBack}{HTML}{F9F8F8}    % Fundo sutil quente
-\definecolor{formGold}{HTML}{7D6608}   % Destaque sobrio
-\definecolor{formBack}{HTML}{FCFBF7}
+\definecolor{azuldef}{RGB}{26,54,93}      % Azul-Marinho Profundo
+\definecolor{vinhoteo}{RGB}{114,28,36}    % Vinho / Bordeaux Sóbrio
+\definecolor{grafite}{RGB}{40,40,40}      % Grafite Neutro
 
-% --- Graficos Vetoriais (TikZ & pgfplots) ---
+% --- Gráficos Vetoriais (TikZ & pgfplots) ---
 \usepackage{tikz}
 \usetikzlibrary{
     arrows.meta,
@@ -128,156 +75,135 @@
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 
-% --- Cabecalhos e Rodapes (fancyhdr) ---
+% --- Cabeçalhos e Rodapés (fancyhdr) ---
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\footnotesize\itshape\nouppercase{\leftmark}}
-\fancyfoot[C]{\small\thepage}
+\fancyhead[LE,RO]{\thepage}
+\fancyhead[RE]{\nouppercase{\leftmark}}
+\fancyhead[LO]{\nouppercase{\rightmark}}
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0pt}
 
-% Macro para capitulos sem numeracao no corpo (Respostas, Bibliografia)
-\newcommand{\capitulosemnumero}[1]{%
-    \chapter*{#1}%
-    \addcontentsline{toc}{chapter}{#1}%
-    \markboth{#1}{#1}%
+% --- Inserção de Capa em Sangria Total ---
+\newcommand{\inserircapa}{%
+    \IfFileExists{capa.png}{%
+        \thispagestyle{empty}%
+        \newgeometry{margin=0pt}%
+        \noindent\includegraphics[width=\paperwidth,height=\paperheight]{capa.png}%
+        \clearpage%
+        \restoregeometry%
+    }{%
+        \IfFileExists{capa.jpg}{%
+            \thispagestyle{empty}%
+            \newgeometry{margin=0pt}%
+            \noindent\includegraphics[width=\paperwidth,height=\paperheight]{capa.jpg}%
+            \clearpage%
+            \restoregeometry%
+        }{}%
+    }%
 }
 
-% --- Caixas Minimalistas com Fio Lateral de 2.5pt (tcolorbox) ---
+% --- Divisória Horizontal Semântica para Exemplos ---
+\newcommand{\divisorexemplo}{\par\nopagebreak\vspace{2mm}\noindent\rule{\linewidth}{0.4pt}\par\nopagebreak\vspace{2.5mm}}
+
+% --- Ambiente de Exemplo: Fluxo contínuo no papel branco ---
+\newenvironment{exemplo}[1]{%
+    \par\addvspace{1.2em}%
+    \noindent\textbf{Exemplo #1.}\enspace\ignorespaces
+}{%
+    \penalty10000\hfill$\triangleleft$\par\addvspace{1.2em}%
+}
+
+% --- Caixas Semânticas Minimalistas (tcolorbox) ---
 \usepackage{tcolorbox}
-\tcbuselibrary{skins,breakable,theorems}
+\tcbuselibrary{skins,breakable}
 
-\tcbset{
-    sbmminimal/.style={
-        enhanced,
-        breakable,
-        frame hidden,
-        interior style={fill=#1},
-        arc=0pt,
-        outer arc=0pt,
-        boxrule=0pt,
-        left=3.5mm,
-        right=2mm,
-        top=2mm,
-        bottom=2mm,
-        before skip=0.8em,
-        after skip=0.8em
-    }
+% Definição: Fio lateral fino de 1.2pt em Azul-Marinho Profundo
+\newtcolorbox{definicao}[1]{%
+    blanker,
+    breakable,
+    colback=white,
+    left=3.5mm,
+    right=0mm,
+    top=1mm,
+    bottom=1mm,
+    borderline west={1.2pt}{0pt}{azuldef},
+    fonttitle=\bfseries\color{azuldef},
+    title=Definição #1,
+    before skip=10pt,
+    after skip=10pt
 }
 
-% Definicao (Barra Azul Cobalto)
-\newtcolorbox[auto counter, number within=chapter]{definicao}[2][]{
-    sbmminimal=defBack,
-    borderline west={2.5pt}{0pt}{defBlue},
-    fonttitle=\bfseries\color{defBlue},
-    attach title to upper={\par\smallskip},
-    title={Definição~\thetcbcounter\ifx\relax#2\relax\else\ (#2)\fi.},
-    #1
+% Teorema: Fio lateral fino de 1.2pt em Vinho Bordeaux
+\newtcolorbox{teorema}[1]{%
+    blanker,
+    breakable,
+    colback=white,
+    left=3.5mm,
+    right=0mm,
+    top=1mm,
+    bottom=1mm,
+    borderline west={1.2pt}{0pt}{vinhoteo},
+    fonttitle=\bfseries\color{vinhoteo},
+    title={#1},
+    before skip=10pt,
+    after skip=10pt
 }
 
-% Teorema (Barra Vinho Escuro)
-\newtcolorbox[auto counter, number within=chapter]{teorema}[2][]{
-    sbmminimal=thmBack,
-    borderline west={2.5pt}{0pt}{thmRed},
-    fonttitle=\bfseries\color{thmRed},
-    attach title to upper={\par\smallskip},
-    title={Teorema~\thetcbcounter\ifx\relax#2\relax\else\ (#2)\fi.},
-    #1
+% Caixa de Fórmulas / Resumo de Bloco
+\newtcolorbox{caixaformulas}[1]{%
+    enhanced,
+    colback=gray!3!white,
+    colframe=black!70,
+    arc=1mm,
+    boxrule=0.7pt,
+    left=8pt,
+    right=8pt,
+    top=6pt,
+    bottom=6pt,
+    fonttitle=\bfseries\color{black},
+    colbacktitle=gray!15!white,
+    title=#1,
+    breakable,
+    before skip=8pt,
+    after skip=8pt
 }
 
-% Proposicao e Lema
-\newtcolorbox[auto counter, number within=chapter]{proposicao}[2][]{
-    sbmminimal=thmBack,
-    borderline west={2.5pt}{0pt}{thmRed},
-    fonttitle=\bfseries\color{thmRed},
-    attach title to upper={\par\smallskip},
-    title={Proposição~\thetcbcounter\ifx\relax#2\relax\else\ (#2)\fi.},
-    #1
-}
-
-\newtcolorbox[auto counter, number within=chapter]{lema}[2][]{
-    sbmminimal=thmBack,
-    borderline west={2.5pt}{0pt}{thmRed},
-    fonttitle=\bfseries\color{thmRed},
-    attach title to upper={\par\smallskip},
-    title={Lema~\thetcbcounter\ifx\relax#2\relax\else\ (#2)\fi.},
-    #1
-}
-
-% Caixa de Resumo / Formulas
-\newtcolorbox{caixaformulas}[2][]{
-    sbmminimal=formBack,
-    borderline west={2.5pt}{0pt}{formGold},
-    fonttitle=\bfseries\color{formGold},
-    attach title to upper={\par\smallskip},
-    title={\ifx\relax#2\relax Resumo de Fórmulas\else #2\fi.},
-    #1
-}
-
-% Exemplos em Texto Corrido (Retrocompativel com \begin{exemplo}{Titulo})
-\newcounter{exemplocnt}[chapter]
-\renewcommand{\theexemplocnt}{\thechapter.\arabic{exemplocnt}}
-\newenvironment{exemplo}[2][]{%
-    \refstepcounter{exemplocnt}%
-    \par\medskip\noindent%
-    \textbf{Exemplo~\theexemplocnt\ifx\relax#2\relax\else\ (#2)\fi.}\ \ignorespaces%
-}{%
-    \hfill$\triangleleft$\par\medskip%
-}
-
-% Ambientes Textuais Auxiliares
+% Ambientes clássicos de Demonstração e Solução
 \newenvironment{solucao}{%
-    \par\smallskip\noindent\textbf{Resolução.}\ \ignorespaces
+    \par\noindent\textbf{Solução.}\ \ignorespaces
 }{%
-    \hfill$\triangleleft$\par\medskip
+    \hfill$\blacksquare$\par\medskip
 }
 
 \newenvironment{demonstracao}{%
-    \par\smallskip\noindent\textit{Demonstração.}\ \ignorespaces
+    \par\noindent\textit{Demonstração.}\ \ignorespaces
 }{%
     \hfill$\square$\par\medskip
 }
 
-\newenvironment{nota}{%
-    \par\smallskip\noindent\textbf{Nota.}\ \ignorespaces
+% --- Ancoragem Determinística de Figuras no Fluxo ---
+\makeatletter
+\renewenvironment{figure}[1][]{%
+    \par\addvspace{\intextsep}%
+    \noindent\begin{minipage}{\linewidth}%
+    \def\@captype{figure}%
+    \centering
 }{%
-    \par\smallskip
+    \end{minipage}%
+    \par\addvspace{\intextsep}%
 }
+\makeatother
 
-% --- Hiperlinks ---
+% --- Hiperlinks e Metadados ---
 \usepackage{hyperref}
 \hypersetup{
     colorlinks=true,
-    linkcolor=defBlue,
-    citecolor=thmRed,
-    urlcolor=defBlue,
+    linkcolor=azuldef,
+    citecolor=vinhoteo,
+    urlcolor=azuldef,
     pdfborder={0 0 0}
-}
-
-% --- Insercao Dinamica de Capa Sangrada ---
-\newcommand{\inserircapasangrada}[1]{%
-    \thispagestyle{empty}%
-    \begin{tikzpicture}[remember picture,overlay]
-        \node[inner sep=0pt,outer sep=0pt] at (current page.center) {%
-            \includegraphics[width=\paperwidth,height=\paperheight]{#1}%
-        };
-    \end{tikzpicture}%
-    \clearpage
-}
-
-\newcommand{\inserircapa}{%
-    \IfFileExists{capa.png}{%
-        \inserircapasangrada{capa.png}%
-    }{%
-        \IfFileExists{capa.jpg}{%
-            \inserircapasangrada{capa.jpg}%
-        }{%
-            \IfFileExists{capa.jpeg}{%
-                \inserircapasangrada{capa.jpeg}%
-            }{}%
-        }%
-    }%
 }
 
 
