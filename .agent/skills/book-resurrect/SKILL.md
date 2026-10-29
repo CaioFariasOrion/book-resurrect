@@ -56,25 +56,23 @@ Se `scripts/` e `templates/` já existirem, ignore esta seção.
    ```bash
    python scripts/slice_pdf.py --pdf "<arquivo.pdf>" --start 1 --end 5 --out build/temp_pages
    ```
-2. Apresente ao usuário a triagem questionando nos 4 blocos abaixo e AGUARDE as respostas. Não inicie a Fase 0 sem elas.
+2. **Triagem Interativa com Botões Selecionáveis (`ask_question`):**
+   É terminantemente **OBRIGATÓRIO** chamar a ferramenta nativa `ask_question` para apresentar as perguntas em formato de botões de múltipla escolha interativos. **NUNCA** imprima os blocos de perguntas como texto puro exigindo que o usuário digite códigos.
 
-   **Bloco 1 (Propósito):**
-   - `(1) Resgate Fiel`: mantém idioma e grafia do original.
-   - `(2) Modernização Didática` (sob `<lexical_modernization_rules>`): atualiza português arcaico para a ortografia contemporânea.
-   - `(3) Tradução Técnica` (sob `<translation_syntax_lock>`): traduz para outro idioma mantendo a notação algébrica intocada.
-
-   **Bloco 2 (Natureza):**
-   - `(A) Exatas (LaTeX/TikZ)`: gera a esteira LaTeX/TikZ.
-   - `(B) Humanas (Markdown/EPUB)`: gera a esteira Markdown/EPUB.
-
-   **Bloco 3 (Figuras):**
-   - `(H) Híbrido inteligente`: TikZ vetorial para geometria e gráficos, recorte para gravuras e fotos.
-   - `(R) Recorte total`: todas as figuras via `crop_figure.py`.
-
-   **Bloco 4 (Perfil Editorial de Diagramação):**
-   - `(1) Reconstrução Editorial Acadêmica Completa (Padrão SBM/Springer)`: recomendado para obras antigas, apostilas datilografadas ou escaneamentos degradados (reconstrói a mancha gráfica e aplica padronização integral).
-   - `(2) Fidelidade Estrutural ao Original (Fac-símile Moderno)`: recomendado para livros contemporâneos (preserva 100% da microtipografia do corpo de texto, recuos, epígrafes e citações em bloco, restringindo o design system exclusivamente ao `preambulo.tex`).
-   *(Nota: ambientes de teoremas, definições e exemplos aplicam-se exclusivamente a obras de Ciências Exatas sob `project_mode: "exatas_latex"`).*
+   A chamada de `ask_question` deve conter as 4 perguntas estruturadas:
+   - **Pergunta 1 (Propósito da Edição):**
+     * `(Recommended) Resgate Fiel: mantém idioma e grafia originais`
+     * `Modernização Didática: atualiza português arcaico para ortografia contemporânea`
+     * `Tradução Técnica: traduz para outro idioma preservando a notação matemática`
+   - **Pergunta 2 (Natureza e Saída da Obra):**
+     * `(Recommended) Exatas (LaTeX/TikZ): para matemática, física e diagramas vetoriais`
+     * `Humanas (Markdown/EPUB): para literatura, ensaios e texto corrido`
+   - **Pergunta 3 (Tratamento de Figuras):**
+     * `(Recommended) Híbrido inteligente: TikZ vetorial para gráficos e recorte para fotos`
+     * `Recorte total: todas as figuras tratadas e recortadas via crop_figure.py`
+   - **Pergunta 4 (Perfil Editorial de Diagramação):**
+     * `(Recommended) Reconstrução Editorial Acadêmica Completa (Padrão SBM/Springer)`
+     * `Fidelidade Estrutural ao Original (Fac-símile Moderno com microtipografia)`
 3. Persista as respostas no cabeçalho do `roadmap.json` (criado no Passo 0.4), nos campos `"project_mode"`, `"translation_mode"`, `"figure_mode"` e `"editorial_profile"`, com estes valores:
 
    | Campo | Valores aceitos |
