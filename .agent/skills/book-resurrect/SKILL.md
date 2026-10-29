@@ -406,10 +406,19 @@ Estágio independente acionado sob demanda após a compilação do `main.pdf`. O
    - Converte automaticamente blocos avulsos `\begin{center} ... \refstepcounter{figure}` para ambientes canônicos `\begin{figure}[htbp] ... \caption{...} \label{...} \end{figure}`.
    - Higieniza e padroniza réguas manuais `\hrule` duplicadas ou com `\vspace` soltos para a macro semântica protegida `\divisorexemplo`.
 
-### Estágio 4.2 — Auditoria Visual e Geométrica de TikZ
-1. **Mapeamento de Blocos TikZ:** Varrer todos os blocos `tikzpicture` da obra, inspecionando coordenadas e rótulos (`node`).
-2. **Protocolo Anticolisão:** Injetar `fill=white, inner sep=1.5pt` e calibrar âncoras (`above`, `below`, `left`, `right`, `xshift`, `yshift`) em nós sobrepostos a curvas ou eixos cartesianos.
-3. **Controle de Escala e Limites:** Inserir `\clip` em curvas assintóticas e ajustar fatores de `scale` para impedir que diagramas ultrapassem a mancha útil de 120mm x 186mm.
+### Estágio 4.2: Auditoria Visual, Auto-Cura Geométrica e Galeria de Revisão
+1. **Execução Mandatória do Script de Auto-Cura:**
+   Execute o script canônico de varredura e desobstrução geométrica:
+   ```bash
+   python scripts/audit_and_fix_tikz.py --capitulos capitulos/ --pdf build/main.pdf --review-dir build/figures_review --dpi 250
+   ```
+2. **Mapeamento e Regras de Auto-Cura de TikZ:**
+   - **Regra do Fundo Protetor:** Aplica compulsoriamente `fill=white, inner sep=1.2pt` em nós (`node`) de texto, cotas e fórmulas para impedir que linhas e curvas atravessem caracteres.
+   - **Desobstrução de Nós Críticos:** Ajusta âncoras cegas em coordenadas concorrentes (afastamento ortogonal em retas secantes e tangentes, orientação externa de raios $R$ em setores polares, hierarquia vertical de cotas nos eixos cartesianos).
+   - **Normalização de Ambientes:** Converte blocos avulsos para ambientes `figure` canônicos com `[htbp]`.
+3. **Galeria de Auditoria Visual em Alta Resolução:**
+   - O script gera miniaturas PNG de alta resolução de cada página contendo figuras em `build/figures_review/`.
+   - Produz automaticamente o índice `build/figures_review/INDEX.md` com tabela de correspondência (página do PDF, figuras detectadas e link para visualização direta da imagem).
 4. **Análise de Log:** Varrer `build/main.log` para sanar avisos de `Overfull \hbox` e orfandades graves (`Underfull \vbox`).
 
 ### Estágio 4.3 — Empacotamento Institucional e Despacho
