@@ -109,7 +109,17 @@ python scripts/compile_check.py --lint --main main.tex --outdir build --render-l
 ## 6. Abertura Editorial Canônica (Idêntica para Todos os Livros)
 
 1. **Página 1 (Capa Sangrada):** `\inserircapa` projeta `capa.png` ou `capa.jpg` em sangria total B5 (`160mm x 230mm`).
-2. **Página 2 (Folha de Rosto):** `\folhaderosto` com título, autor e a chancela *"Edição Vetorial Recuperada via Book Resurrect"*.
+2. **Página 2 (Folha de Rosto):** `\folhaderosto` com título, autor e a chancela *"Diagramado com Book Resurrect"*.
 3. **Página 3 (Manifesto Editorial):** `\manifestoeditorial` sem numeração de página, com a logo `assets/logo-blue.png`, manifesto institucional e link oficial do repositório.
 4. **Página 4 (Sumário Automático):** `\tableofcontents` gerado pelo compilador com links clicáveis.
 5. **Página 5 em diante:** Conteúdo da obra (`\chapter*{Introdução}` com `\addcontentsline` para pré/pós-textuais e `\chapter{Título}` para capítulos numerados).
+
+---
+
+## 7. Uso Responsável
+
+O **Book Resurrect** é uma ferramenta de software de código aberto para processamento e diagramação tipográfica local. A ferramenta não hospeda, não seleciona, não armazena em servidores nem distribui obras literárias ou científicas, e não é autora, editora ou titular de direitos sobre o conteúdo diagramado.
+
+O conteúdo, a distribuição e o licenciamento de qualquer obra processada são de responsabilidade exclusiva do usuário que realizou a compilação. O uso da ferramenta deve restringir-se a obras em **domínio público**, obras sob licenças compatíveis ou mediante **autorização expressa do titular dos direitos autorais**. O projeto não apoia a reprodução ou a comercialização de obras protegidas sem a devida autorização legal.
+
+Para a declaração completa de termos e responsabilidades, consulte o documento [USO_RESPONSAVEL.md](USO_RESPONSAVEL.md).

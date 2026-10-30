@@ -79,12 +79,18 @@ Antes de qualquer fase, verifique a pasta aberta (workspace atual):
    - **Pergunta 4 (Perfil Editorial de Diagramação):**
      * `(Recommended) Reconstrução Editorial Acadêmica Completa (Padrão SBM/Springer B5)`
      * `Fidelidade Estrutural ao Original (Fac-símile Moderno com microtipografia)`
+   - **Pergunta 5 (Direitos e Legitimidade da Obra):**
+     * `(Recommended) Sim, a obra está em domínio público`
+     * `Sim, possuo licença ou autorização expressa do titular dos direitos`
+     * `Não tenho certeza / Obra protegida sem licença formal`
+     > **Aviso de Responsabilidade:** Se a resposta for negativa ou incerta, o agente deve alertar explicitamente o usuário sobre a política de uso responsável (o Book Resurrect é apenas um motor de diagramação local e não apoia a reprodução de obras protegidas sem autorização) e perguntar se deseja prosseguir sob sua inteira responsabilidade, registrando a resposta no campo `direitos` do `metadata.yaml`.
 
 3. As escolhas são passadas ao `init_book_fase0.py`, que grava `metadata.yaml` e `roadmap.json` com:
    - `profile`: `"tecnico"` ou `"texto"`
    - `translation_mode`: `"fiel"`, `"modernizacao"` ou `"traducao"`
    - `figure_mode`: `"hibrido"` ou `"recorte_total"`
    - `editorial_profile`: `"reconstrucao_sbm"` ou `"facsimile_moderno"`
+   - `direitos`: `"dominio_publico"`, `"licenciado"` ou `"autorizado"`
 
 ---
 

@@ -251,6 +251,7 @@ def write_metadata_yaml(
     translation_mode: str,
     figure_mode: str,
     editorial_profile: str,
+    direitos: str = "dominio_publico",
 ) -> None:
     content = (
         "---\n"
@@ -261,6 +262,7 @@ def write_metadata_yaml(
         f"figure_mode: \"{figure_mode}\"\n"
         f"editorial_profile: \"{editorial_profile}\"\n"
         "language: \"pt-BR\"\n"
+        f"direitos: \"{direitos}\"\n"
         "---\n"
     )
     Path("metadata.yaml").write_text(content, encoding="utf-8")
@@ -291,6 +293,13 @@ def main() -> int:
     parser.add_argument("--offset", type=int, default=None, help="Offset manual entre pagina PDF e livro.")
     parser.add_argument("--title", type=str, default=None, help="Titulo do livro.")
     parser.add_argument("--author", type=str, default=None, help="Autor do livro.")
+    parser.add_argument(
+        "--direitos",
+        "--rights",
+        type=str,
+        default="dominio_publico",
+        help="Declaracao de direitos/autorizacao da obra (dominio_publico, licenciado, autorizado).",
+    )
     parser.add_argument("--pre-render", action="store_true", help="Pre-renderiza todas as paginas em build/temp_pages.")
 
     args = parser.parse_args()
@@ -350,6 +359,7 @@ def main() -> int:
         translation_mode=args.translation_mode,
         figure_mode=args.figure_mode,
         editorial_profile=args.editorial_profile,
+        direitos=args.direitos,
     )
 
     roadmap_data = {
