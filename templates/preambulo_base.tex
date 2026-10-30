@@ -102,13 +102,29 @@
             \clearpage%
             \restoregeometry%
         }{%
-            \IfFileExists{CAPA.jpg}{%
+            \IfFileExists{capa.jpeg}{%
                 \newgeometry{margin=0pt}%
                 \thispagestyle{empty}%
-                \noindent\vbox to \textheight{\vss\hbox to \textwidth{\hss\includegraphics[width=\paperwidth,height=\paperheight]{CAPA.jpg}\hss}\vss}%
+                \noindent\vbox to \textheight{\vss\hbox to \textwidth{\hss\includegraphics[width=\paperwidth,height=\paperheight]{capa.jpeg}\hss}\vss}%
                 \clearpage%
                 \restoregeometry%
-            }{}%
+            }{%
+                \IfFileExists{CAPA.jpg}{%
+                    \newgeometry{margin=0pt}%
+                    \thispagestyle{empty}%
+                    \noindent\vbox to \textheight{\vss\hbox to \textwidth{\hss\includegraphics[width=\paperwidth,height=\paperheight]{CAPA.jpg}\hss}\vss}%
+                    \clearpage%
+                    \restoregeometry%
+                }{%
+                    \IfFileExists{CAPA.png}{%
+                        \newgeometry{margin=0pt}%
+                        \thispagestyle{empty}%
+                        \noindent\vbox to \textheight{\vss\hbox to \textwidth{\hss\includegraphics[width=\paperwidth,height=\paperheight]{CAPA.png}\hss}\vss}%
+                        \clearpage%
+                        \restoregeometry%
+                    }{}%
+                }%
+            }%
         }%
     }%
 }
