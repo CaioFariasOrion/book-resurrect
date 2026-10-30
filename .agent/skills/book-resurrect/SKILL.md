@@ -97,7 +97,7 @@ Antes de qualquer fase, verifique a pasta aberta (workspace atual):
    ```
 2. O script executa em segundos:
    - Divisão geométrica de folhas duplas em páginas verticais (`detect_and_split_double_pages`).
-   - Extração de `capa.png` na raiz a partir da página 1 do PDF (se ainda não houver capa na raiz).
+   - **Invariante de Capa:** preserva qualquer capa de alta definição já fornecida na raiz (`capa.png`, `capa.jpg`, `capa.jpeg`, `CAPA.jpg`, `CAPA.png`); caso nenhuma exista, extrai a página 1 do PDF como `capa.png` (fallback de 200 DPI).
    - Mapeamento do sumário e geração de `metadata.yaml`, `roadmap.json`, `progress.json` e esqueletos `capitulos/capXX.tex`.
    - Sincronização de `main.tex`, `preambulo_base.tex` e `perfil_<profile>.tex` na raiz com os `\include{capitulos/...}`.
    - Pré-renderização de todas as páginas em `build/temp_pages/page_NNN.png`.

@@ -73,9 +73,12 @@ def detect_and_split_double_pages(pdf_path: Path) -> Path:
 
 
 def ensure_cover_extracted(pdf_path: Path) -> None:
-    """Extrai a pagina 1 do PDF como capa.png na raiz caso nenhuma capa exista."""
-    for name in ("capa.png", "capa.jpg", "CAPA.jpg", "capa.jpeg"):
-        if Path(name).is_file():
+    """Preserva capa externa se ja fornecida pelo usuario na raiz;
+    caso contrario, extrai a pagina 1 do PDF em 200 DPI como fallback."""
+    for name in ("capa.png", "capa.jpg", "capa.jpeg", "CAPA.jpg", "CAPA.png"):
+        p = Path(name)
+        if p.is_file() and p.stat().st_size > 0:
+            print(f"[INFO] Capa pre-existente detectada ('{name}'). Preservando arquivo de alta definicao.")
             return
     try:
         with fitz.open(pdf_path) as doc:
